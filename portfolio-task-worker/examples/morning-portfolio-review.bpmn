@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:fluxnova="http://fluxnova.finos.org/schema/1.0/bpmn" id="Definitions_MorningPortfolioReview" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Fluxnova Modeler">
+  <bpmn:process id="morning-portfolio-review" name="Morning Portfolio Review" isExecutable="true" camunda:historyTimeToLive="30">
+
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_ToFetchPortfolio</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="FetchPortfolio" name="Fetch Portfolio" camunda:type="external" camunda:topic="fetch-portfolio">
+      <bpmn:incoming>Flow_ToFetchPortfolio</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToFetchMarketData</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="FetchMarketData" name="Fetch Market Data" camunda:type="external" camunda:topic="fetch-market-data">
+      <bpmn:incoming>Flow_ToFetchMarketData</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToComputeRiskMetrics</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="ComputeRiskMetrics" name="Compute Risk Metrics" camunda:type="external" camunda:topic="compute-risk-metrics">
+      <bpmn:incoming>Flow_ToComputeRiskMetrics</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSplitGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="SplitGateway" name="Any positions flagged?">
+      <bpmn:incoming>Flow_ToSplitGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Flagged</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Routine</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:adHocSubProcess id="AiBriefingTask" name="AI Briefing">
+      <bpmn:extensionElements>
+        <fluxnova:properties>
+          <fluxnova:property name="activeTasksCollection" value="OrchestratorTask" />
+        </fluxnova:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Flagged</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAnalystReview</bpmn:outgoing>
+      <bpmn:serviceTask id="OrchestratorTask" name="Agent LLM Call" camunda:type="external" camunda:topic="agent-task" camunda:modelerTemplate="org.fluxnova.example.AgentTaskLlmCall">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="prompt">The following positions moved more than 5% overnight: ${flaggedSymbols}. Full position details for the portfolio (JSON): ${positionsMetrics}. For each flagged position only, use your available tools (real-time news and analyst consensus data) to find out why it moved, then write a concise morning briefing (2-3 sentences per flagged position) explaining the move and any analyst rating change. Do not comment on positions that are not flagged. Start with a one-line portfolio-level summary.</camunda:inputParameter>
+            <camunda:inputParameter name="systemPrompt">You are a financial analyst assistant preparing a morning portfolio briefing for a human analyst who will review it before it goes out. Always ground claims in tool results - never invent news or ratings. Be concise, factual, and specific to the flagged tickers.</camunda:inputParameter>
+            <camunda:inputParameter name="model">gpt-4.1-mini</camunda:inputParameter>
+            <camunda:inputParameter name="maxTokens">1024</camunda:inputParameter>
+            <camunda:inputParameter name="outputVariable">aiDraftBriefing</camunda:inputParameter>
+            <camunda:inputParameter name="maxIterations">8</camunda:inputParameter>
+            <camunda:inputParameter name="memoryWindowSize">0</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="PolygonTool" name="Polygon MCP" camunda:type="external" camunda:topic="agent-tool" camunda:modelerTemplate="org.fluxnova.example.AgentToolMcp">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="toolKind">mcp</camunda:inputParameter>
+            <camunda:inputParameter name="mcpServerName">polygon</camunda:inputParameter>
+            <camunda:inputParameter name="mcpTransport">stdio</camunda:inputParameter>
+            <camunda:inputParameter name="mcpCommand">uvx</camunda:inputParameter>
+            <camunda:inputParameter name="mcpArgs">--with mcp&lt;2 --from git+https://github.com/polygon-io/mcp_polygon@v0.1.0 mcp_polygon</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="FinnhubTool" name="Finnhub MCP" camunda:type="external" camunda:topic="agent-tool" camunda:modelerTemplate="org.fluxnova.example.AgentToolMcp">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="toolKind">mcp</camunda:inputParameter>
+            <camunda:inputParameter name="mcpServerName">finnhub</camunda:inputParameter>
+            <camunda:inputParameter name="mcpTransport">stdio</camunda:inputParameter>
+            <camunda:inputParameter name="mcpCommand">npx</camunda:inputParameter>
+            <camunda:inputParameter name="mcpArgs">-y finnhub-mcp --stdio</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+    </bpmn:adHocSubProcess>
+
+    <bpmn:userTask id="AnalystReview" name="Analyst Review" camunda:candidateGroups="analysts">
+      <bpmn:incoming>Flow_ToAnalystReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToMergeGateway</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:serviceTask id="BuildRoutineSummary" name="Build Routine Summary" camunda:type="external" camunda:topic="build-routine-summary">
+      <bpmn:incoming>Flow_Routine</bpmn:incoming>
+      <bpmn:outgoing>Flow_RoutineToMerge</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="MergeGateway">
+      <bpmn:incoming>Flow_ToMergeGateway</bpmn:incoming>
+      <bpmn:incoming>Flow_RoutineToMerge</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPublish</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:serviceTask id="PublishBriefing" name="Publish Briefing" camunda:type="external" camunda:topic="publish-briefing">
+      <bpmn:incoming>Flow_ToPublish</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_ToFetchPortfolio" sourceRef="StartEvent_1" targetRef="FetchPortfolio" />
+    <bpmn:sequenceFlow id="Flow_ToFetchMarketData" sourceRef="FetchPortfolio" targetRef="FetchMarketData" />
+    <bpmn:sequenceFlow id="Flow_ToComputeRiskMetrics" sourceRef="FetchMarketData" targetRef="ComputeRiskMetrics" />
+    <bpmn:sequenceFlow id="Flow_ToSplitGateway" sourceRef="ComputeRiskMetrics" targetRef="SplitGateway" />
+    <bpmn:sequenceFlow id="Flow_Flagged" name="yes" sourceRef="SplitGateway" targetRef="AiBriefingTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${hasFlaggedPositions == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Routine" name="no" sourceRef="SplitGateway" targetRef="BuildRoutineSummary" />
+    <bpmn:sequenceFlow id="Flow_ToAnalystReview" sourceRef="AiBriefingTask" targetRef="AnalystReview" />
+    <bpmn:sequenceFlow id="Flow_ToMergeGateway" sourceRef="AnalystReview" targetRef="MergeGateway" />
+    <bpmn:sequenceFlow id="Flow_RoutineToMerge" sourceRef="BuildRoutineSummary" targetRef="MergeGateway" />
+    <bpmn:sequenceFlow id="Flow_ToPublish" sourceRef="MergeGateway" targetRef="PublishBriefing" />
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="PublishBriefing" targetRef="EndEvent_1" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="morning-portfolio-review">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FetchPortfolio_di" bpmnElement="FetchPortfolio">
+        <dc:Bounds x="240" y="230" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FetchMarketData_di" bpmnElement="FetchMarketData">
+        <dc:Bounds x="400" y="230" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ComputeRiskMetrics_di" bpmnElement="ComputeRiskMetrics">
+        <dc:Bounds x="560" y="230" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SplitGateway_di" bpmnElement="SplitGateway" isMarkerVisible="true">
+        <dc:Bounds x="725" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AiBriefingTask_di" bpmnElement="AiBriefingTask" isExpanded="true">
+        <dc:Bounds x="830" y="60" width="620" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OrchestratorTask_di" bpmnElement="OrchestratorTask">
+        <dc:Bounds x="865" y="120" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="PolygonTool_di" bpmnElement="PolygonTool">
+        <dc:Bounds x="1050" y="120" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="FinnhubTool_di" bpmnElement="FinnhubTool">
+        <dc:Bounds x="1230" y="120" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AnalystReview_di" bpmnElement="AnalystReview">
+        <dc:Bounds x="1560" y="130" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BuildRoutineSummary_di" bpmnElement="BuildRoutineSummary">
+        <dc:Bounds x="830" y="340" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="MergeGateway_di" bpmnElement="MergeGateway" isMarkerVisible="true">
+        <dc:Bounds x="1725" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="PublishBriefing_di" bpmnElement="PublishBriefing">
+        <dc:Bounds x="1830" y="230" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1992" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_ToFetchPortfolio_di" bpmnElement="Flow_ToFetchPortfolio">
+        <di:waypoint x="188" y="270" />
+        <di:waypoint x="240" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToFetchMarketData_di" bpmnElement="Flow_ToFetchMarketData">
+        <di:waypoint x="350" y="270" />
+        <di:waypoint x="400" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToComputeRiskMetrics_di" bpmnElement="Flow_ToComputeRiskMetrics">
+        <di:waypoint x="510" y="270" />
+        <di:waypoint x="560" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSplitGateway_di" bpmnElement="Flow_ToSplitGateway">
+        <di:waypoint x="670" y="270" />
+        <di:waypoint x="725" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Flagged_di" bpmnElement="Flow_Flagged">
+        <di:waypoint x="750" y="245" />
+        <di:waypoint x="750" y="150" />
+        <di:waypoint x="830" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Routine_di" bpmnElement="Flow_Routine">
+        <di:waypoint x="750" y="295" />
+        <di:waypoint x="750" y="380" />
+        <di:waypoint x="830" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAnalystReview_di" bpmnElement="Flow_ToAnalystReview">
+        <di:waypoint x="1450" y="150" />
+        <di:waypoint x="1560" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToMergeGateway_di" bpmnElement="Flow_ToMergeGateway">
+        <di:waypoint x="1670" y="170" />
+        <di:waypoint x="1750" y="170" />
+        <di:waypoint x="1750" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RoutineToMerge_di" bpmnElement="Flow_RoutineToMerge">
+        <di:waypoint x="940" y="380" />
+        <di:waypoint x="1750" y="380" />
+        <di:waypoint x="1750" y="295" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPublish_di" bpmnElement="Flow_ToPublish">
+        <di:waypoint x="1775" y="270" />
+        <di:waypoint x="1830" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="1940" y="270" />
+        <di:waypoint x="1992" y="270" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

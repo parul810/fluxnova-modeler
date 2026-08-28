@@ -1,0 +1,16 @@
+{
+  "name": "portfolio-task-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic external task worker for the Morning Portfolio Review demo process (fetch, compute, publish - no LLM)",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "mock-data": "node mock-data/portfolio-api.js",
+    "ui": "node ui-server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

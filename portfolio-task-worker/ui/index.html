@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Portfolio Ops Console</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161922;
+    --panel-2: #1c2030;
+    --border: #262b38;
+    --text: #d7dae2;
+    --muted: #7c8394;
+    --accent: #5b8def;
+    --ok: #3fb968;
+    --warn: #e0a83f;
+    --err: #e0554f;
+    --tag-engine: #5b8def;
+    --tag-agent: #e0a83f;
+    --tag-mcp: #b072e8;
+    --tag-llm: #3fb968;
+    --tag-portfolio-api: #4fb8c9;
+    --tag-risk-engine: #e0a83f;
+    --tag-publish: #3fb968;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    flex-wrap: wrap;
+  }
+  h1 { font-size: 15px; font-weight: 600; margin: 0; flex-shrink: 0; }
+  h1 span { color: var(--muted); font-weight: 400; }
+
+  .regime-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 12px;
+  }
+  .regime-toggle button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .regime-toggle button.active.volatile { background: var(--err); color: #1a0d0d; font-weight: 600; }
+  .regime-toggle button.active.quiet { background: var(--ok); color: #0d1a11; font-weight: 600; }
+
+  #start {
+    background: var(--accent);
+    color: #08101f;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #start:disabled { opacity: 0.5; cursor: default; }
+  #status {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  #status.running { color: var(--warn); border-color: var(--warn); }
+  #status.completed { color: var(--ok); border-color: var(--ok); }
+  #status.awaiting-review { color: var(--tag-mcp); border-color: var(--tag-mcp); }
+  #instance {
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    margin-left: auto;
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  #log {
+    flex: 1.3;
+    overflow-y: auto;
+    padding: 14px 20px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-right: 1px solid var(--border);
+  }
+  #log .line { margin-bottom: 1px; }
+  #log .src { color: var(--muted); }
+  #log .elapsed { color: var(--muted); }
+  #log .tag { font-weight: 600; }
+  #log .tag-engine { color: var(--tag-engine); }
+  #log .tag-agent-task { color: var(--tag-agent); }
+  #log .tag-mcp { color: var(--tag-mcp); }
+  #log .tag-llm { color: var(--tag-llm); }
+  #log .tag-portfolio-api { color: var(--tag-portfolio-api); }
+  #log .tag-risk-engine { color: var(--tag-risk-engine); }
+  #log .tag-publish { color: var(--tag-publish); }
+  #log .plain { color: var(--muted); }
+
+  #side {
+    width: 460px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+  }
+  .panel { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .panel h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+  .empty-note { color: var(--muted); font-size: 12.5px; font-style: italic; }
+
+  .review-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+  .review-card .chip {
+    display: inline-block;
+    font-size: 10.5px;
+    font-family: ui-monospace, monospace;
+    color: var(--warn);
+    border: 1px solid var(--warn);
+    border-radius: 999px;
+    padding: 2px 8px;
+    margin-bottom: 8px;
+  }
+  .review-card textarea {
+    width: 100%;
+    min-height: 120px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 12.5px;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 8px;
+  }
+  .review-actions { display: flex; gap: 8px; }
+  .btn {
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-approve { background: var(--ok); color: #0d1a11; }
+  .btn-dismiss { background: transparent; color: var(--err); border: 1px solid var(--err); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  .briefing-card {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+    font-size: 12.5px;
+  }
+  .briefing-card:last-child { border-bottom: none; }
+  .briefing-card .meta { color: var(--muted); font-size: 10.5px; margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
+  .briefing-card .flag-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .briefing-card .flag-dot.flagged { background: var(--warn); }
+  .briefing-card .flag-dot.routine { background: var(--muted); }
+  .briefing-card .text { color: var(--text); white-space: pre-wrap; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Portfolio Ops Console <span id="key">— morning-portfolio-review</span></h1>
+    <div class="regime-toggle">
+      <button id="regime-volatile" data-mode="volatile">Volatile day</button>
+      <button id="regime-quiet" data-mode="quiet">Quiet day</button>
+    </div>
+    <button id="start">Start Review</button>
+    <span id="status">idle</span>
+    <span id="instance"></span>
+  </header>
+  <main>
+    <div id="log"></div>
+    <div id="side">
+      <div class="panel">
+        <h2>Pending Analyst Review</h2>
+        <div id="reviews"><div class="empty-note">No reviews waiting.</div></div>
+      </div>
+      <div class="panel">
+        <h2>Recent Briefings</h2>
+        <div id="recent"><div class="empty-note">Nothing published yet.</div></div>
+      </div>
+    </div>
+  </main>
+
+<script>
+  const logEl = document.getElementById('log');
+  const startBtn = document.getElementById('start');
+  const statusEl = document.getElementById('status');
+  const instanceEl = document.getElementById('instance');
+  const reviewsEl = document.getElementById('reviews');
+  const recentEl = document.getElementById('recent');
+  const regimeButtons = {
+    volatile: document.getElementById('regime-volatile'),
+    quiet: document.getElementById('regime-quiet')
+  };
+
+  const LINE_RE = /^\[(\w+)\]\s*\[\+\s*([\d.]+)s\]\s*\[([^\]]+)\]\s*(.*)$/;
+
+  function tagClass(tag) {
+    const head = tag.split(':')[0].toLowerCase();
+    return ['engine', 'agent-task', 'mcp', 'llm', 'portfolio-api', 'risk-engine', 'publish'].includes(head) ? 'tag-' + head : '';
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+
+  function appendLine(raw) {
+    const match = raw.match(LINE_RE);
+    const div = document.createElement('div');
+    div.className = 'line';
+
+    if (match) {
+      const [, src, elapsed, tag, message] = match;
+      div.innerHTML =
+        '<span class="src">' + src + '</span> ' +
+        '<span class="elapsed">+' + elapsed + 's</span> ' +
+        '<span class="tag ' + tagClass(tag) + '">[' + escapeHtml(tag) + ']</span> ' +
+        escapeHtml(message);
+    } else {
+      div.innerHTML = '<span class="plain">' + escapeHtml(raw) + '</span>';
+    }
+
+    const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 40;
+    logEl.appendChild(div);
+    if (atBottom) logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  new EventSource('/api/logs').onmessage = (event) => appendLine(event.data);
+
+  function setStatus(state) {
+    statusEl.textContent = state.toLowerCase().replace(/_/g, ' ');
+    statusEl.className = state.toLowerCase();
+  }
+
+  let pollTimer = null;
+
+  async function pollStatus(processInstanceId) {
+    try {
+      const res = await fetch('/api/status?processInstanceId=' + encodeURIComponent(processInstanceId));
+      const data = await res.json();
+
+      if (data.state === 'COMPLETED') {
+        setStatus('completed');
+        startBtn.disabled = false;
+        clearInterval(pollTimer);
+      } else if (data.hasFlaggedPositions === 'true' || data.hasFlaggedPositions === true) {
+        setStatus('awaiting-review');
+      } else {
+        setStatus('running');
+      }
+    } catch (err) { /* keep polling */ }
+  }
+
+  startBtn.addEventListener('click', async () => {
+    startBtn.disabled = true;
+    setStatus('running');
+    instanceEl.textContent = '';
+
+    try {
+      const res = await fetch('/api/start', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || !data.id) {
+        setStatus('failed');
+        startBtn.disabled = false;
+        return;
+      }
+      instanceEl.textContent = data.id;
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => pollStatus(data.id), 1500);
+    } catch (err) {
+      setStatus('failed');
+      startBtn.disabled = false;
+    }
+  });
+
+  async function refreshRegime() {
+    try {
+      const res = await fetch('/api/regime');
+      const data = await res.json();
+      Object.entries(regimeButtons).forEach(([mode, btn]) => btn.classList.toggle('active', mode === data.regime));
+      Object.entries(regimeButtons).forEach(([mode, btn]) => btn.classList.toggle(mode, mode === data.regime));
+    } catch (err) { /* ignore */ }
+  }
+
+  Object.entries(regimeButtons).forEach(([mode, btn]) => {
+    btn.addEventListener('click', async () => {
+      await fetch('/api/regime', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) });
+      refreshRegime();
+    });
+  });
+
+  async function refreshReviews() {
+    let reviews;
+    try {
+      reviews = await (await fetch('/api/pending-reviews')).json();
+    } catch (err) { return; }
+
+    if (!reviews.length) {
+      reviewsEl.innerHTML = '<div class="empty-note">No reviews waiting.</div>';
+      return;
+    }
+
+    reviewsEl.innerHTML = '';
+    reviews.forEach((review) => {
+      const card = document.createElement('div');
+      card.className = 'review-card';
+      card.innerHTML =
+        '<div class="chip">flagged: ' + escapeHtml(review.flaggedSymbols || '') + '</div>' +
+        '<textarea>' + escapeHtml(review.aiDraftBriefing || '') + '</textarea>' +
+        '<div class="review-actions">' +
+        '<button class="btn btn-approve">Approve</button>' +
+        '<button class="btn btn-dismiss">Dismiss</button>' +
+        '</div>';
+
+      const textarea = card.querySelector('textarea');
+      const [approveBtn, dismissBtn] = card.querySelectorAll('button');
+
+      const submit = async (decision) => {
+        approveBtn.disabled = true;
+        dismissBtn.disabled = true;
+        await fetch('/api/review/' + review.taskId + '/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decision, text: textarea.value })
+        });
+        refreshReviews();
+        refreshRecent();
+      };
+
+      approveBtn.addEventListener('click', () => submit('approved'));
+      dismissBtn.addEventListener('click', () => submit('dismissed'));
+      reviewsEl.appendChild(card);
+    });
+  }
+
+  async function refreshRecent() {
+    let recent;
+    try {
+      recent = await (await fetch('/api/recent')).json();
+    } catch (err) { return; }
+
+    if (!recent.length) {
+      recentEl.innerHTML = '<div class="empty-note">Nothing published yet.</div>';
+      return;
+    }
+
+    recentEl.innerHTML = '';
+    recent.forEach((item) => {
+      const flagged = item.hasFlaggedPositions === 'true' || item.hasFlaggedPositions === true;
+      const card = document.createElement('div');
+      card.className = 'briefing-card';
+      card.innerHTML =
+        '<div class="meta"><span class="flag-dot ' + (flagged ? 'flagged' : 'routine') + '"></span>' +
+        (flagged ? 'AI-reviewed' : 'Routine') + ' · ' + new Date(item.endTime).toLocaleTimeString() + '</div>' +
+        '<div class="text">' + escapeHtml(item.finalBriefing || '(no content)') + '</div>';
+      recentEl.appendChild(card);
+    });
+  }
+
+  refreshRegime();
+  refreshReviews();
+  refreshRecent();
+  setInterval(refreshReviews, 2000);
+  setInterval(refreshRecent, 5000);
+</script>
+</body>
+</html>
