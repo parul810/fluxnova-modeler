@@ -1,0 +1,133 @@
+[
+  {
+    "$schema": "https://unpkg.com/@camunda/element-templates-json-schema/resources/schema.json",
+    "name": "Agent LLM Call",
+    "id": "org.fluxnova.example.AgentTaskLlmCall",
+    "description": "Sends a prompt to an LLM and writes the response back as a process variable. Place inside an Agent Task (ad hoc sub-process).",
+    "appliesTo": [
+      "bpmn:ServiceTask"
+    ],
+    "icon": {
+      "contents": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22' fill='none'%3E%3Crect x='2' y='2' width='18' height='18' rx='4' fill='%236B4FBB'/%3E%3Crect x='6' y='9' width='10' height='7' rx='2' fill='white'/%3E%3Ccircle cx='9' cy='12.5' r='1.2' fill='%236B4FBB'/%3E%3Ccircle cx='13' cy='12.5' r='1.2' fill='%236B4FBB'/%3E%3Cline x1='11' y1='6' x2='11' y2='9' stroke='white' stroke-width='1.4'/%3E%3Ccircle cx='11' cy='5' r='1.4' fill='white'/%3E%3C/svg%3E"
+    },
+    "properties": [
+      {
+        "label": "Implementation",
+        "type": "Hidden",
+        "value": "external",
+        "binding": {
+          "type": "property",
+          "name": "camunda:type"
+        }
+      },
+      {
+        "label": "Topic",
+        "type": "Hidden",
+        "value": "agent-task",
+        "binding": {
+          "type": "property",
+          "name": "camunda:topic"
+        }
+      },
+      {
+        "label": "Prompt",
+        "description": "The prompt sent to the LLM. Embed process variables with ${variableName}, e.g. Summarize: ${inputText}",
+        "type": "Text",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "prompt"
+        },
+        "constraints": {
+          "notEmpty": true
+        }
+      },
+      {
+        "label": "System Prompt",
+        "description": "Optional system prompt for the LLM call. Embed process variables with ${variableName}",
+        "type": "Text",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "systemPrompt"
+        }
+      },
+      {
+        "label": "Model",
+        "type": "Dropdown",
+        "value": "gpt-4.1",
+        "choices": [
+          { "name": "gpt-4.1", "value": "gpt-4.1" },
+          { "name": "gpt-4.1-mini", "value": "gpt-4.1-mini" },
+          { "name": "gpt-4o", "value": "gpt-4o" },
+          { "name": "gpt-4o-mini", "value": "gpt-4o-mini" }
+        ],
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "model"
+        }
+      },
+      {
+        "label": "Max Tokens",
+        "type": "String",
+        "value": "1024",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "maxTokens"
+        },
+        "constraints": {
+          "notEmpty": true,
+          "pattern": {
+            "value": "^[0-9]+$",
+            "message": "Must be a whole number."
+          }
+        }
+      },
+      {
+        "label": "Output Variable Name",
+        "description": "Process variable that will hold the LLM's response text",
+        "type": "String",
+        "value": "agentResponse",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "outputVariable"
+        },
+        "constraints": {
+          "notEmpty": true
+        }
+      },
+      {
+        "label": "Max Iterations",
+        "description": "Caps the tool-calling loop: how many times this agent may call a tool before it must answer with whatever it has.",
+        "type": "String",
+        "value": "6",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "maxIterations"
+        },
+        "constraints": {
+          "notEmpty": true,
+          "pattern": {
+            "value": "^[0-9]+$",
+            "message": "Must be a whole number."
+          }
+        }
+      },
+      {
+        "label": "Memory Window Size",
+        "description": "Number of past conversation turns to remember across runs of this Agent Task in the same process instance. 0 disables memory.",
+        "type": "String",
+        "value": "0",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "memoryWindowSize"
+        },
+        "constraints": {
+          "notEmpty": true,
+          "pattern": {
+            "value": "^[0-9]+$",
+            "message": "Must be a whole number."
+          }
+        }
+      }
+    ]
+  }
+]

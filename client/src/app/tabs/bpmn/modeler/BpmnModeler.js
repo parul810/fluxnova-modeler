@@ -33,6 +33,7 @@ import paletteTracking from 'bpmn-js-tracking/lib/features/palette';
 import { BpmnImprovedCanvasModule } from './features/improved-canvas';
 import FluxnovaBpmnModdle from '../../../../moddle/fluxnova-bpmn-moddle';
 import FluxnovaModelerModdle from '../../../../moddle/fluxnova-bpmn-modeler-moddle';
+import FluxnovaAgenticModdle from '../../../../moddle/fluxnova-agentic-moddle';
 
 import Flags, {
   DISABLE_ADJUST_ORIGIN,
@@ -67,6 +68,7 @@ export default class PlatformBpmnModeler extends BpmnModeler {
       moddleExtensions: {
         fluxnova: FluxnovaBpmnModdle,
         modeler: FluxnovaModelerModdle,
+        agentic: FluxnovaAgenticModdle,
         ...moddleExtensions
       },
       disableAdjustOrigin: Flags.get(DISABLE_ADJUST_ORIGIN),

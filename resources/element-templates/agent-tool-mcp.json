@@ -1,0 +1,112 @@
+[
+  {
+    "$schema": "https://unpkg.com/@camunda/element-templates-json-schema/resources/schema.json",
+    "name": "Agent Tool (MCP)",
+    "id": "org.fluxnova.example.AgentToolMcp",
+    "description": "Connects an Agent Task's LLM to every tool exposed by an MCP server (tools/list is called once, each remote tool becomes a callable tool). This task is never run by the engine — it's read as config by the agent-task-worker. Place inside an Agent Task (ad hoc sub-process), alongside the Agent LLM Call task.",
+    "appliesTo": [
+      "bpmn:ServiceTask"
+    ],
+    "icon": {
+      "contents": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22' fill='none'%3E%3Crect x='2' y='2' width='18' height='18' rx='4' fill='%236B4C9A'/%3E%3Ccircle cx='7' cy='11' r='2.2' fill='none' stroke='white' stroke-width='1.4'/%3E%3Ccircle cx='15' cy='11' r='2.2' fill='none' stroke='white' stroke-width='1.4'/%3E%3Cline x1='9.2' y1='11' x2='12.8' y2='11' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E"
+    },
+    "properties": [
+      {
+        "label": "Implementation",
+        "type": "Hidden",
+        "value": "external",
+        "binding": {
+          "type": "property",
+          "name": "camunda:type"
+        }
+      },
+      {
+        "label": "Topic",
+        "type": "Hidden",
+        "value": "agent-tool",
+        "binding": {
+          "type": "property",
+          "name": "camunda:topic"
+        }
+      },
+      {
+        "label": "Tool Kind",
+        "type": "Hidden",
+        "value": "mcp",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "toolKind"
+        }
+      },
+      {
+        "label": "Server Name",
+        "description": "Short identifier for this MCP server, used to prefix the tool names the LLM sees, e.g. fxrate → fxrate__get_rate.",
+        "type": "String",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "mcpServerName"
+        },
+        "constraints": {
+          "notEmpty": true,
+          "pattern": {
+            "value": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "message": "Must be a valid identifier: letters, numbers, underscores, not starting with a number."
+          }
+        }
+      },
+      {
+        "label": "Transport",
+        "type": "Dropdown",
+        "value": "http",
+        "choices": [
+          { "name": "Remote (HTTP)", "value": "http" },
+          { "name": "Local (stdio subprocess)", "value": "stdio" }
+        ],
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "mcpTransport"
+        }
+      },
+      {
+        "label": "Server URL",
+        "description": "Used when Transport is Remote (HTTP). The MCP server's JSON-RPC endpoint, e.g. https://api.example.com/mcp",
+        "type": "String",
+        "optional": true,
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "mcpServerUrl"
+        }
+      },
+      {
+        "label": "Headers (JSON)",
+        "description": "Optional JSON object of request headers, e.g. auth tokens. Only used when Transport is Remote (HTTP).",
+        "type": "Text",
+        "optional": true,
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "mcpHeaders"
+        }
+      },
+      {
+        "label": "Command",
+        "description": "Used when Transport is Local (stdio subprocess). The executable to spawn, e.g. node",
+        "type": "String",
+        "optional": true,
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "mcpCommand"
+        }
+      },
+      {
+        "label": "Command Arguments",
+        "description": "Space-separated arguments passed to Command, e.g. ./fx-rate-mcp/server.js",
+        "type": "String",
+        "optional": true,
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "mcpArgs"
+        }
+      }
+    ]
+  }
+]

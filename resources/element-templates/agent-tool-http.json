@@ -1,0 +1,127 @@
+[
+  {
+    "$schema": "https://unpkg.com/@camunda/element-templates-json-schema/resources/schema.json",
+    "name": "Agent Tool (HTTP)",
+    "id": "org.fluxnova.example.AgentToolHttp",
+    "description": "Declares an HTTP tool an Agent Task's LLM can call. This task is never run by the engine — it's read as config by the agent-task-worker. Place inside an Agent Task (ad hoc sub-process), alongside the Agent LLM Call task.",
+    "appliesTo": [
+      "bpmn:ServiceTask"
+    ],
+    "icon": {
+      "contents": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22' fill='none'%3E%3Crect x='2' y='2' width='18' height='18' rx='4' fill='%23347758'/%3E%3Cpath d='M6 8 L10 11 L6 14' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='11' y1='14' x2='16' y2='14' stroke='white' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E"
+    },
+    "properties": [
+      {
+        "label": "Implementation",
+        "type": "Hidden",
+        "value": "external",
+        "binding": {
+          "type": "property",
+          "name": "camunda:type"
+        }
+      },
+      {
+        "label": "Topic",
+        "type": "Hidden",
+        "value": "agent-tool",
+        "binding": {
+          "type": "property",
+          "name": "camunda:topic"
+        }
+      },
+      {
+        "label": "Tool Name",
+        "description": "The function name the LLM will use to call this tool. No spaces, e.g. lookup_account.",
+        "type": "String",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "toolName"
+        },
+        "constraints": {
+          "notEmpty": true,
+          "pattern": {
+            "value": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "message": "Must be a valid function name: letters, numbers, underscores, not starting with a number."
+          }
+        }
+      },
+      {
+        "label": "Tool Description",
+        "description": "Tells the LLM what this tool does and when to use it. This is what the model reads to decide whether to call it — be specific.",
+        "type": "Text",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "toolDescription"
+        },
+        "constraints": {
+          "notEmpty": true
+        }
+      },
+      {
+        "label": "Input Schema (JSON Schema)",
+        "description": "JSON Schema describing the arguments the LLM must supply when calling this tool, e.g. {\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}},\"required\":[\"query\"]}",
+        "type": "Text",
+        "value": "{\n  \"type\": \"object\",\n  \"properties\": {},\n  \"required\": []\n}",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "inputSchema"
+        },
+        "constraints": {
+          "notEmpty": true
+        }
+      },
+      {
+        "label": "HTTP Method",
+        "type": "Dropdown",
+        "value": "GET",
+        "choices": [
+          { "name": "GET", "value": "GET" },
+          { "name": "POST", "value": "POST" },
+          { "name": "PATCH", "value": "PATCH" },
+          { "name": "PUT", "value": "PUT" },
+          { "name": "DELETE", "value": "DELETE" }
+        ],
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "httpMethod"
+        }
+      },
+      {
+        "label": "URL",
+        "description": "The tool's HTTP endpoint. Use {{argName}} to interpolate an argument the LLM supplied for this call, e.g. https://api.example.com/accounts/{{accountId}}",
+        "type": "String",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "url"
+        },
+        "constraints": {
+          "notEmpty": true,
+          "pattern": {
+            "value": "^https?://.*",
+            "message": "Must be an http(s) URL."
+          }
+        }
+      },
+      {
+        "label": "Headers (JSON)",
+        "description": "Optional JSON object of request headers. Supports {{argName}} interpolation.",
+        "type": "Text",
+        "optional": true,
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "headers"
+        }
+      },
+      {
+        "label": "Body Template",
+        "description": "Optional request body, sent for POST/PATCH/PUT. Use {{argName}} to interpolate an argument the LLM supplied for this call.",
+        "type": "Text",
+        "optional": true,
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "bodyTemplate"
+        }
+      }
+    ]
+  }
+]

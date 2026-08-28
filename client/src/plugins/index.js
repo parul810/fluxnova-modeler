@@ -19,6 +19,7 @@ import UserJourneyStatistics from './user-journey-statistics';
 import VersionInfo from './version-info';
 import ZeebePlugin from './zeebe-plugin';
 import ConnectorTemplates from './connector-templates';
+import AgenticTask from './agentic-task';
 
 export default [
   CamundaPlugin,
@@ -31,5 +32,6 @@ export default [
   VersionInfo,
   ZeebePlugin,
   UserJourneyStatistics,
-  ConnectorTemplates
+  ConnectorTemplates,
+  AgenticTask
 ];

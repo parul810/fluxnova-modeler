@@ -25,6 +25,39 @@
           "type": "String"
         }
       ]
+    },
+    {
+      "name": "AdHocSubProcess",
+      "isAbstract": true,
+      "extends": [
+        "bpmn:AdHocSubProcess"
+      ],
+      "properties": [
+        {
+          "name": "isAgentTask",
+          "isAttr": true,
+          "type": "Boolean"
+        },
+        {
+          "name": "agentSystemPrompt",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "ServiceTask",
+      "isAbstract": true,
+      "extends": [
+        "bpmn:ServiceTask"
+      ],
+      "properties": [
+        {
+          "name": "agentDescription",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
     }
   ],
   "enumerations": []
