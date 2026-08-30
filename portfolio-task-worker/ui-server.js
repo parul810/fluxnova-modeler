@@ -9,7 +9,7 @@ const UI_PORT = Number(process.env.UI_PORT || 4290);
 const ENGINE_REST_URL = process.env.ENGINE_REST_URL || 'http://localhost:8080/engine-rest';
 const PORTFOLIO_API_URL = process.env.PORTFOLIO_API_URL || 'http://localhost:4200';
 const PROCESS_DEFINITION_KEY = process.env.PROCESS_DEFINITION_KEY || 'morning-portfolio-review';
-const REVIEW_TASK_KEY = 'AnalystReview';
+const CHAT_TASK_KEY = 'ChatWithAgent';
 const INDEX_FILE = path.join(__dirname, 'ui', 'index.html');
 
 // tail both this worker's log AND the AI worker's log into one merged
@@ -89,30 +89,54 @@ async function fetchVariable(processInstanceId, name) {
   return rows[0]?.value ?? null;
 }
 
-async function fetchPendingReviews() {
-  const res = await fetch(`${ENGINE_REST_URL}/task?processDefinitionKey=${PROCESS_DEFINITION_KEY}&taskDefinitionKey=${REVIEW_TASK_KEY}`);
+async function fetchPendingChats() {
+  const res = await fetch(`${ENGINE_REST_URL}/task?processDefinitionKey=${PROCESS_DEFINITION_KEY}&taskDefinitionKey=${CHAT_TASK_KEY}`);
   if (!res.ok) return [];
   const tasks = await res.json();
 
   return Promise.all(tasks.map(async (task) => {
-    const [aiDraftBriefing, flaggedSymbols] = await Promise.all([
-      fetchVariable(task.processInstanceId, 'aiDraftBriefing'),
-      fetchVariable(task.processInstanceId, 'flaggedSymbols')
+    const [agentReply, flaggedSymbols, agentMessagesRaw] = await Promise.all([
+      fetchVariable(task.processInstanceId, 'agentReply'),
+      fetchVariable(task.processInstanceId, 'flaggedSymbols'),
+      fetchVariable(task.processInstanceId, 'agentMessages')
     ]);
-    return { taskId: task.id, processInstanceId: task.processInstanceId, created: task.created, aiDraftBriefing, flaggedSymbols };
+
+    let transcript = [];
+    try {
+      transcript = agentMessagesRaw ? JSON.parse(agentMessagesRaw) : [];
+    } catch (err) {
+      transcript = [];
+    }
+
+    return { taskId: task.id, processInstanceId: task.processInstanceId, created: task.created, agentReply, flaggedSymbols, transcript };
   }));
 }
 
-async function completeReview(taskId, decision, text) {
-  const finalBriefing = decision === 'approved' ? text : 'Dismissed by analyst - no briefing published.';
+async function sendChatMessage(taskId, analystMessage) {
   const res = await fetch(`${ENGINE_REST_URL}/task/${taskId}/complete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       workerId: 'portfolio-ui',
       variables: {
-        finalBriefing: { value: finalBriefing, type: 'String' },
-        reviewDecision: { value: decision, type: 'String' }
+        action: { value: 'send', type: 'String' },
+        analystMessage: { value: analystMessage, type: 'String' }
+      }
+    })
+  });
+  return { ok: res.ok, status: res.status };
+}
+
+async function exitChat(taskId, decision, draft) {
+  const finalBriefing = decision === 'finalize' ? draft : 'Dismissed by analyst - no briefing published.';
+  const res = await fetch(`${ENGINE_REST_URL}/task/${taskId}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      workerId: 'portfolio-ui',
+      variables: {
+        action: { value: decision, type: 'String' },
+        finalBriefing: { value: finalBriefing, type: 'String' }
       }
     })
   });
@@ -212,20 +236,32 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && url.pathname === '/api/pending-reviews') {
+  if (req.method === 'GET' && url.pathname === '/api/pending-chats') {
     try {
-      sendJson(res, 200, await fetchPendingReviews());
+      sendJson(res, 200, await fetchPendingChats());
     } catch (err) {
       sendJson(res, 502, { error: err.message });
     }
     return;
   }
 
-  if (req.method === 'POST' && url.pathname.startsWith('/api/review/')) {
+  if (req.method === 'POST' && url.pathname.startsWith('/api/chat/') && url.pathname.endsWith('/send')) {
     const taskId = url.pathname.split('/')[3];
     try {
-      const { decision, text } = JSON.parse(await readBody(req));
-      const result = await completeReview(taskId, decision, text);
+      const { message } = JSON.parse(await readBody(req));
+      const result = await sendChatMessage(taskId, message);
+      sendJson(res, result.ok ? 200 : 502, { ok: result.ok });
+    } catch (err) {
+      sendJson(res, 502, { error: err.message });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname.startsWith('/api/chat/') && url.pathname.endsWith('/exit')) {
+    const taskId = url.pathname.split('/')[3];
+    try {
+      const { decision, draft } = JSON.parse(await readBody(req));
+      const result = await exitChat(taskId, decision, draft);
       sendJson(res, result.ok ? 200 : 502, { ok: result.ok });
     } catch (err) {
       sendJson(res, 502, { error: err.message });

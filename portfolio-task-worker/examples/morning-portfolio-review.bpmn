@@ -34,17 +34,17 @@
         </fluxnova:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Flagged</bpmn:incoming>
-      <bpmn:outgoing>Flow_ToAnalystReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToChatWithAgent</bpmn:outgoing>
       <bpmn:serviceTask id="OrchestratorTask" name="Agent LLM Call" camunda:type="external" camunda:topic="agent-task" camunda:modelerTemplate="org.fluxnova.example.AgentTaskLlmCall">
         <bpmn:extensionElements>
           <camunda:inputOutput>
-            <camunda:inputParameter name="prompt">The following positions moved more than 5% overnight: ${flaggedSymbols}. Full position details for the portfolio (JSON): ${positionsMetrics}. For each flagged position only, use your available tools (real-time news and analyst consensus data) to find out why it moved, then write a concise morning briefing (2-3 sentences per flagged position) explaining the move and any analyst rating change. Do not comment on positions that are not flagged. Start with a one-line portfolio-level summary.</camunda:inputParameter>
-            <camunda:inputParameter name="systemPrompt">You are a financial analyst assistant preparing a morning portfolio briefing for a human analyst who will review it before it goes out. Always ground claims in tool results - never invent news or ratings. Be concise, factual, and specific to the flagged tickers.</camunda:inputParameter>
+            <camunda:inputParameter name="prompt">The following positions moved more than 5% overnight: ${flaggedSymbols}. Full position details for the portfolio (JSON): ${positionsMetrics}. For each flagged position only, use your available tools (real-time news and analyst consensus data) to find out why it moved, then write a concise morning briefing (2-3 sentences per flagged position) explaining the move and any analyst rating change. Do not comment on positions that are not flagged. Start with a one-line portfolio-level summary. A human analyst will read this and may ask you follow-up questions afterward.</camunda:inputParameter>
+            <camunda:inputParameter name="systemPrompt">You are a financial analyst assistant preparing a morning portfolio briefing for a human analyst, who can chat back and forth with you to refine it before it goes out. Always ground claims in tool results - never invent news or ratings. Be concise and factual.</camunda:inputParameter>
             <camunda:inputParameter name="model">gpt-4.1-mini</camunda:inputParameter>
             <camunda:inputParameter name="maxTokens">1024</camunda:inputParameter>
-            <camunda:inputParameter name="outputVariable">aiDraftBriefing</camunda:inputParameter>
+            <camunda:inputParameter name="outputVariable">agentReply</camunda:inputParameter>
             <camunda:inputParameter name="maxIterations">8</camunda:inputParameter>
-            <camunda:inputParameter name="memoryWindowSize">0</camunda:inputParameter>
+            <camunda:inputParameter name="memoryWindowSize">10</camunda:inputParameter>
           </camunda:inputOutput>
         </bpmn:extensionElements>
       </bpmn:serviceTask>
@@ -72,10 +72,62 @@
       </bpmn:serviceTask>
     </bpmn:adHocSubProcess>
 
-    <bpmn:userTask id="AnalystReview" name="Analyst Review" camunda:candidateGroups="analysts">
-      <bpmn:incoming>Flow_ToAnalystReview</bpmn:incoming>
-      <bpmn:outgoing>Flow_ToMergeGateway</bpmn:outgoing>
+    <bpmn:userTask id="ChatWithAgent" name="Chat with Agent" camunda:candidateGroups="analysts">
+      <bpmn:incoming>Flow_ToChatWithAgent</bpmn:incoming>
+      <bpmn:incoming>Flow_ChatTurnBack</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToChatGateway</bpmn:outgoing>
     </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="ChatActionGateway" name="Analyst action?">
+      <bpmn:incoming>Flow_ToChatGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_ChatSend</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ChatExit</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:adHocSubProcess id="AgentChatTask" name="Agent Chat Turn">
+      <bpmn:extensionElements>
+        <fluxnova:properties>
+          <fluxnova:property name="activeTasksCollection" value="ChatOrchestratorTask" />
+        </fluxnova:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ChatSend</bpmn:incoming>
+      <bpmn:outgoing>Flow_ChatTurnBack</bpmn:outgoing>
+      <bpmn:serviceTask id="ChatOrchestratorTask" name="Agent LLM Call" camunda:type="external" camunda:topic="agent-task" camunda:modelerTemplate="org.fluxnova.example.AgentTaskLlmCall">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="prompt">${analystMessage}</camunda:inputParameter>
+            <camunda:inputParameter name="systemPrompt">You are a financial analyst assistant chatting with a human analyst about the morning portfolio briefing you drafted earlier. Always ground claims in tool results - never invent news or ratings. Be concise.</camunda:inputParameter>
+            <camunda:inputParameter name="model">gpt-4.1-mini</camunda:inputParameter>
+            <camunda:inputParameter name="maxTokens">1024</camunda:inputParameter>
+            <camunda:inputParameter name="outputVariable">agentReply</camunda:inputParameter>
+            <camunda:inputParameter name="maxIterations">8</camunda:inputParameter>
+            <camunda:inputParameter name="memoryWindowSize">10</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="ChatPolygonTool" name="Polygon MCP" camunda:type="external" camunda:topic="agent-tool" camunda:modelerTemplate="org.fluxnova.example.AgentToolMcp">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="toolKind">mcp</camunda:inputParameter>
+            <camunda:inputParameter name="mcpServerName">polygon</camunda:inputParameter>
+            <camunda:inputParameter name="mcpTransport">stdio</camunda:inputParameter>
+            <camunda:inputParameter name="mcpCommand">uvx</camunda:inputParameter>
+            <camunda:inputParameter name="mcpArgs">--with mcp&lt;2 --from git+https://github.com/polygon-io/mcp_polygon@v0.1.0 mcp_polygon</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="ChatFinnhubTool" name="Finnhub MCP" camunda:type="external" camunda:topic="agent-tool" camunda:modelerTemplate="org.fluxnova.example.AgentToolMcp">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="toolKind">mcp</camunda:inputParameter>
+            <camunda:inputParameter name="mcpServerName">finnhub</camunda:inputParameter>
+            <camunda:inputParameter name="mcpTransport">stdio</camunda:inputParameter>
+            <camunda:inputParameter name="mcpCommand">npx</camunda:inputParameter>
+            <camunda:inputParameter name="mcpArgs">-y finnhub-mcp --stdio</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+    </bpmn:adHocSubProcess>
 
     <bpmn:serviceTask id="BuildRoutineSummary" name="Build Routine Summary" camunda:type="external" camunda:topic="build-routine-summary">
       <bpmn:incoming>Flow_Routine</bpmn:incoming>
@@ -83,7 +135,7 @@
     </bpmn:serviceTask>
 
     <bpmn:exclusiveGateway id="MergeGateway">
-      <bpmn:incoming>Flow_ToMergeGateway</bpmn:incoming>
+      <bpmn:incoming>Flow_ChatExit</bpmn:incoming>
       <bpmn:incoming>Flow_RoutineToMerge</bpmn:incoming>
       <bpmn:outgoing>Flow_ToPublish</bpmn:outgoing>
     </bpmn:exclusiveGateway>
@@ -105,8 +157,13 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${hasFlaggedPositions == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_Routine" name="no" sourceRef="SplitGateway" targetRef="BuildRoutineSummary" />
-    <bpmn:sequenceFlow id="Flow_ToAnalystReview" sourceRef="AiBriefingTask" targetRef="AnalystReview" />
-    <bpmn:sequenceFlow id="Flow_ToMergeGateway" sourceRef="AnalystReview" targetRef="MergeGateway" />
+    <bpmn:sequenceFlow id="Flow_ToChatWithAgent" sourceRef="AiBriefingTask" targetRef="ChatWithAgent" />
+    <bpmn:sequenceFlow id="Flow_ToChatGateway" sourceRef="ChatWithAgent" targetRef="ChatActionGateway" />
+    <bpmn:sequenceFlow id="Flow_ChatSend" name="send" sourceRef="ChatActionGateway" targetRef="AgentChatTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action == "send"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ChatExit" name="finalize / dismiss" sourceRef="ChatActionGateway" targetRef="MergeGateway" />
+    <bpmn:sequenceFlow id="Flow_ChatTurnBack" sourceRef="AgentChatTask" targetRef="ChatWithAgent" />
     <bpmn:sequenceFlow id="Flow_RoutineToMerge" sourceRef="BuildRoutineSummary" targetRef="MergeGateway" />
     <bpmn:sequenceFlow id="Flow_ToPublish" sourceRef="MergeGateway" targetRef="PublishBriefing" />
     <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="PublishBriefing" targetRef="EndEvent_1" />
@@ -142,20 +199,35 @@
       <bpmndi:BPMNShape id="FinnhubTool_di" bpmnElement="FinnhubTool">
         <dc:Bounds x="1230" y="120" width="150" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="AnalystReview_di" bpmnElement="AnalystReview">
-        <dc:Bounds x="1560" y="130" width="110" height="80" />
+      <bpmndi:BPMNShape id="ChatWithAgent_di" bpmnElement="ChatWithAgent">
+        <dc:Bounds x="1520" y="130" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ChatActionGateway_di" bpmnElement="ChatActionGateway" isMarkerVisible="true">
+        <dc:Bounds x="1690" y="145" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AgentChatTask_di" bpmnElement="AgentChatTask" isExpanded="true">
+        <dc:Bounds x="1520" y="280" width="530" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ChatOrchestratorTask_di" bpmnElement="ChatOrchestratorTask">
+        <dc:Bounds x="1550" y="340" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ChatPolygonTool_di" bpmnElement="ChatPolygonTool">
+        <dc:Bounds x="1720" y="340" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ChatFinnhubTool_di" bpmnElement="ChatFinnhubTool">
+        <dc:Bounds x="1890" y="340" width="140" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BuildRoutineSummary_di" bpmnElement="BuildRoutineSummary">
-        <dc:Bounds x="830" y="340" width="110" height="80" />
+        <dc:Bounds x="830" y="500" width="110" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="MergeGateway_di" bpmnElement="MergeGateway" isMarkerVisible="true">
-        <dc:Bounds x="1725" y="245" width="50" height="50" />
+        <dc:Bounds x="2150" y="245" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="PublishBriefing_di" bpmnElement="PublishBriefing">
-        <dc:Bounds x="1830" y="230" width="110" height="80" />
+        <dc:Bounds x="2250" y="230" width="110" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
-        <dc:Bounds x="1992" y="252" width="36" height="36" />
+        <dc:Bounds x="2412" y="252" width="36" height="36" />
       </bpmndi:BPMNShape>
 
       <bpmndi:BPMNEdge id="Flow_ToFetchPortfolio_di" bpmnElement="Flow_ToFetchPortfolio">
@@ -181,30 +253,44 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Routine_di" bpmnElement="Flow_Routine">
         <di:waypoint x="750" y="295" />
-        <di:waypoint x="750" y="380" />
-        <di:waypoint x="830" y="380" />
+        <di:waypoint x="750" y="540" />
+        <di:waypoint x="830" y="540" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToAnalystReview_di" bpmnElement="Flow_ToAnalystReview">
+      <bpmndi:BPMNEdge id="Flow_ToChatWithAgent_di" bpmnElement="Flow_ToChatWithAgent">
         <di:waypoint x="1450" y="150" />
-        <di:waypoint x="1560" y="170" />
+        <di:waypoint x="1520" y="170" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToMergeGateway_di" bpmnElement="Flow_ToMergeGateway">
-        <di:waypoint x="1670" y="170" />
-        <di:waypoint x="1750" y="170" />
-        <di:waypoint x="1750" y="245" />
+      <bpmndi:BPMNEdge id="Flow_ToChatGateway_di" bpmnElement="Flow_ToChatGateway">
+        <di:waypoint x="1630" y="170" />
+        <di:waypoint x="1690" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ChatSend_di" bpmnElement="Flow_ChatSend">
+        <di:waypoint x="1715" y="195" />
+        <di:waypoint x="1715" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ChatExit_di" bpmnElement="Flow_ChatExit">
+        <di:waypoint x="1740" y="170" />
+        <di:waypoint x="2175" y="170" />
+        <di:waypoint x="2175" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ChatTurnBack_di" bpmnElement="Flow_ChatTurnBack">
+        <di:waypoint x="1520" y="370" />
+        <di:waypoint x="1460" y="370" />
+        <di:waypoint x="1460" y="210" />
+        <di:waypoint x="1575" y="210" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_RoutineToMerge_di" bpmnElement="Flow_RoutineToMerge">
-        <di:waypoint x="940" y="380" />
-        <di:waypoint x="1750" y="380" />
-        <di:waypoint x="1750" y="295" />
+        <di:waypoint x="940" y="540" />
+        <di:waypoint x="2175" y="540" />
+        <di:waypoint x="2175" y="295" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ToPublish_di" bpmnElement="Flow_ToPublish">
-        <di:waypoint x="1775" y="270" />
-        <di:waypoint x="1830" y="270" />
+        <di:waypoint x="2200" y="270" />
+        <di:waypoint x="2250" y="270" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
-        <di:waypoint x="1940" y="270" />
-        <di:waypoint x="1992" y="270" />
+        <di:waypoint x="2360" y="270" />
+        <di:waypoint x="2412" y="270" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

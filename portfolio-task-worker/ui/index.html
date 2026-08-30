@@ -137,14 +137,14 @@
   }
   .empty-note { color: var(--muted); font-size: 12.5px; font-style: italic; }
 
-  .review-card {
+  .chat-card {
     background: var(--panel-2);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 12px 14px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
-  .review-card .chip {
+  .chat-card .chip {
     display: inline-block;
     font-size: 10.5px;
     font-family: ui-monospace, monospace;
@@ -154,9 +154,46 @@
     padding: 2px 8px;
     margin-bottom: 8px;
   }
-  .review-card textarea {
+  .chat-thread {
+    max-height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding-right: 2px;
+  }
+  .bubble {
+    max-width: 88%;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+  }
+  .bubble.assistant { align-self: flex-start; background: var(--bg); border: 1px solid var(--border); }
+  .bubble.user { align-self: flex-end; background: var(--accent); color: #08101f; }
+  .chat-input-row { display: flex; gap: 6px; margin-bottom: 10px; }
+  .chat-input-row input {
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 9px;
+    font-size: 12.5px;
+    font-family: inherit;
+  }
+  .draft-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .chat-card textarea {
     width: 100%;
-    min-height: 120px;
+    min-height: 90px;
     background: var(--bg);
     color: var(--text);
     border: 1px solid var(--border);
@@ -176,6 +213,7 @@
     font-weight: 600;
     cursor: pointer;
   }
+  .btn-send { background: var(--accent); color: #08101f; }
   .btn-approve { background: var(--ok); color: #0d1a11; }
   .btn-dismiss { background: transparent; color: var(--err); border: 1px solid var(--err); }
   .btn:disabled { opacity: 0.5; cursor: default; }
@@ -208,8 +246,8 @@
     <div id="log"></div>
     <div id="side">
       <div class="panel">
-        <h2>Pending Analyst Review</h2>
-        <div id="reviews"><div class="empty-note">No reviews waiting.</div></div>
+        <h2>Chat with Agent</h2>
+        <div id="chats"><div class="empty-note">No conversations waiting.</div></div>
       </div>
       <div class="panel">
         <h2>Recent Briefings</h2>
@@ -223,7 +261,8 @@
   const startBtn = document.getElementById('start');
   const statusEl = document.getElementById('status');
   const instanceEl = document.getElementById('instance');
-  const reviewsEl = document.getElementById('reviews');
+  const chatsEl = document.getElementById('chats');
+  const renderedChatTaskIds = new Set();
   const recentEl = document.getElementById('recent');
   const regimeButtons = {
     volatile: document.getElementById('regime-volatile'),
@@ -326,47 +365,118 @@
     });
   });
 
-  async function refreshReviews() {
-    let reviews;
+  function buildChatCard(chat) {
+    const card = document.createElement('div');
+    card.className = 'chat-card';
+    card.id = 'chat-' + chat.taskId;
+
+    const bubbles = chat.transcript.map((m) =>
+      '<div class="bubble ' + (m.role === 'user' ? 'user' : 'assistant') + '">' + escapeHtml(m.content || '') + '</div>'
+    ).join('');
+
+    card.innerHTML =
+      '<div class="chip">flagged: ' + escapeHtml(chat.flaggedSymbols || '') + '</div>' +
+      '<div class="chat-thread">' + (bubbles || '<div class="empty-note">No messages yet.</div>') + '</div>' +
+      '<div class="chat-input-row">' +
+      '<input type="text" placeholder="Ask a follow-up..." />' +
+      '<button class="btn btn-send">Send</button>' +
+      '</div>' +
+      '<div class="draft-label">Final Draft</div>' +
+      '<textarea>' + escapeHtml(chat.agentReply || '') + '</textarea>' +
+      '<div class="review-actions">' +
+      '<button class="btn btn-approve">Finalize</button>' +
+      '<button class="btn btn-dismiss">Dismiss</button>' +
+      '</div>';
+
+    const input = card.querySelector('input');
+    const sendBtn = card.querySelector('.btn-send');
+    const textarea = card.querySelector('textarea');
+    const finalizeBtn = card.querySelector('.btn-approve');
+    const dismissBtn = card.querySelector('.btn-dismiss');
+    const thread = card.querySelector('.chat-thread');
+    thread.scrollTop = thread.scrollHeight;
+
+    const disableAll = (disabled) => {
+      input.disabled = disabled;
+      sendBtn.disabled = disabled;
+      finalizeBtn.disabled = disabled;
+      dismissBtn.disabled = disabled;
+    };
+
+    const send = async () => {
+      const message = input.value.trim();
+      if (!message) return;
+      disableAll(true);
+      renderedChatTaskIds.delete(chat.taskId);
+      await fetch('/api/chat/' + chat.taskId + '/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      card.remove();
+      refreshChats();
+    };
+
+    const exit = async (decision) => {
+      disableAll(true);
+      renderedChatTaskIds.delete(chat.taskId);
+      await fetch('/api/chat/' + chat.taskId + '/exit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision, draft: textarea.value })
+      });
+      card.remove();
+      refreshChats();
+      refreshRecent();
+    };
+
+    sendBtn.addEventListener('click', send);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+    finalizeBtn.addEventListener('click', () => exit('finalize'));
+    dismissBtn.addEventListener('click', () => exit('dismiss'));
+
+    return card;
+  }
+
+  let chatsRequestSeq = 0;
+
+  async function refreshChats() {
+    const seq = ++chatsRequestSeq;
+    let chats;
     try {
-      reviews = await (await fetch('/api/pending-reviews')).json();
+      chats = await (await fetch('/api/pending-chats')).json();
     } catch (err) { return; }
 
-    if (!reviews.length) {
-      reviewsEl.innerHTML = '<div class="empty-note">No reviews waiting.</div>';
+    // a newer refreshChats() call already resolved and rendered - this
+    // response is stale (e.g. it was issued before a chat turn finished
+    // and landed after a faster later poll already showed it), so applying
+    // it now would wipe out the correctly-rendered card. Discard it.
+    if (seq !== chatsRequestSeq) return;
+
+    const currentIds = new Set(chats.map((c) => c.taskId));
+
+    [...renderedChatTaskIds].forEach((id) => {
+      if (!currentIds.has(id)) {
+        const el = document.getElementById('chat-' + id);
+        if (el) el.remove();
+        renderedChatTaskIds.delete(id);
+      }
+    });
+
+    if (!chats.length) {
+      if (!renderedChatTaskIds.size) {
+        chatsEl.innerHTML = '<div class="empty-note">No conversations waiting.</div>';
+      }
       return;
     }
 
-    reviewsEl.innerHTML = '';
-    reviews.forEach((review) => {
-      const card = document.createElement('div');
-      card.className = 'review-card';
-      card.innerHTML =
-        '<div class="chip">flagged: ' + escapeHtml(review.flaggedSymbols || '') + '</div>' +
-        '<textarea>' + escapeHtml(review.aiDraftBriefing || '') + '</textarea>' +
-        '<div class="review-actions">' +
-        '<button class="btn btn-approve">Approve</button>' +
-        '<button class="btn btn-dismiss">Dismiss</button>' +
-        '</div>';
+    const emptyNote = chatsEl.querySelector('.empty-note');
+    if (emptyNote) emptyNote.remove();
 
-      const textarea = card.querySelector('textarea');
-      const [approveBtn, dismissBtn] = card.querySelectorAll('button');
-
-      const submit = async (decision) => {
-        approveBtn.disabled = true;
-        dismissBtn.disabled = true;
-        await fetch('/api/review/' + review.taskId + '/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ decision, text: textarea.value })
-        });
-        refreshReviews();
-        refreshRecent();
-      };
-
-      approveBtn.addEventListener('click', () => submit('approved'));
-      dismissBtn.addEventListener('click', () => submit('dismissed'));
-      reviewsEl.appendChild(card);
+    chats.forEach((chat) => {
+      if (renderedChatTaskIds.has(chat.taskId)) return;
+      renderedChatTaskIds.add(chat.taskId);
+      chatsEl.appendChild(buildChatCard(chat));
     });
   }
 
@@ -395,9 +505,9 @@
   }
 
   refreshRegime();
-  refreshReviews();
+  refreshChats();
   refreshRecent();
-  setInterval(refreshReviews, 2000);
+  setInterval(refreshChats, 2000);
   setInterval(refreshRecent, 5000);
 </script>
 </body>

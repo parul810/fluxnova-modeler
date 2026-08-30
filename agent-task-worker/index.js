@@ -336,15 +336,33 @@ async function invokeTool(tool, args) {
 // fresh matching tool results would violate the chat API's message-sequence
 // rules. Memory is scoped to the process instance via the agentMessages
 // variable, the same mechanism outputVariable already uses.
+//
+// The serialized result also has to fit in a plain engine String variable
+// (commonly a ~4000-char DB column) — a single verbose prompt or reply is
+// enough to blow that budget on its own, and it only gets worse turn over
+// turn, so this both truncates individual messages and, as a last resort,
+// drops the oldest ones until the whole thing fits.
+
+const MEMORY_MESSAGE_CHAR_LIMIT = 1200;
+const MEMORY_JSON_CHAR_BUDGET = 3500;
 
 function cleanConversationMessages(messages) {
-  return messages.filter(
-    (m) => m.role === 'user' || (m.role === 'assistant' && !m.tool_calls && m.content)
-  );
+  return messages
+    .filter((m) => m.role === 'user' || (m.role === 'assistant' && !m.tool_calls && m.content))
+    .map((m) => ({
+      role: m.role,
+      content: typeof m.content === 'string' && m.content.length > MEMORY_MESSAGE_CHAR_LIMIT
+        ? `${m.content.slice(0, MEMORY_MESSAGE_CHAR_LIMIT)}…(truncated for memory)`
+        : m.content
+    }));
 }
 
 function trimToWindow(cleanMessages, windowSize) {
-  return cleanMessages.slice(-(windowSize * 2));
+  let windowed = cleanMessages.slice(-(windowSize * 2));
+  while (windowed.length > 0 && JSON.stringify(windowed).length > MEMORY_JSON_CHAR_BUDGET) {
+    windowed = windowed.slice(1);
+  }
+  return windowed;
 }
 
 // --- Task handling ------------------------------------------------------
