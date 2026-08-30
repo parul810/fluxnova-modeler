@@ -1,0 +1,522 @@
+<title>The Agentic Wiring Diagram</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --paper:#eef1ec;
+    --page-bg:#dde3dc;
+    --ink:#0f2a4a;
+    --ink-soft:#3c5878;
+    --line:#b9c4c2;
+    --accent:#c97a24;
+    --accent-strong:#a8611a;
+    --accent-soft:#f1d9b3;
+    --surface:#ffffff;
+    --surface-2:#e2e7e1;
+    --teal:#2f6a52;
+    --plum:#6a3f78;
+    --plum-soft:#e6d9ea;
+    --shadow: 0 1px 2px rgba(15,42,74,0.06), 0 12px 28px rgba(15,42,74,0.10);
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0c2c50;
+      --page-bg:#081d38;
+      --ink:#eaf2f8;
+      --ink-soft:#b7cfe3;
+      --line:rgba(234,242,248,0.22);
+      --accent:#f0a94e;
+      --accent-strong:#f7c07b;
+      --accent-soft:rgba(240,169,78,0.16);
+      --surface:#123a63;
+      --surface-2:#0f3258;
+      --teal:#7dcbab;
+      --plum:#c9a3d6;
+      --plum-soft:rgba(201,163,214,0.16);
+      --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 16px 34px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0c2c50;
+    --page-bg:#081d38;
+    --ink:#eaf2f8;
+    --ink-soft:#b7cfe3;
+    --line:rgba(234,242,248,0.22);
+    --accent:#f0a94e;
+    --accent-strong:#f7c07b;
+    --accent-soft:rgba(240,169,78,0.16);
+    --surface:#123a63;
+    --surface-2:#0f3258;
+    --teal:#7dcbab;
+    --plum:#c9a3d6;
+    --plum-soft:rgba(201,163,214,0.16);
+    --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 16px 34px rgba(0,0,0,0.35);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--page-bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+
+  .sheet{ max-width:960px; margin:0 auto; padding:2px 0 96px; }
+  .drawing{ background:var(--paper); box-shadow:var(--shadow); border:1px solid var(--line); }
+
+  .titleblock{
+    padding:26px clamp(20px,5vw,44px) 20px;
+    border-bottom:2px solid var(--ink);
+  }
+  .titleblock .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-soft); margin:0 0 10px;
+  }
+  h1{
+    font-family:"Oswald", sans-serif; font-weight:600; text-transform:uppercase;
+    letter-spacing:.02em; font-size:clamp(26px,5vw,40px); line-height:1.05;
+    margin:0 0 12px; text-wrap:balance; color:var(--ink);
+  }
+  .titleblock p.dek{
+    font-size:15.5px; line-height:1.6; color:var(--ink-soft); max-width:66ch; margin:0 0 6px;
+  }
+  .titleblock .ref{
+    font-family:"IBM Plex Mono", monospace; font-size:11.5px; color:var(--ink-soft);
+    margin-top:14px;
+  }
+  .titleblock .ref a{ color:var(--accent-strong); }
+
+  section.panel{ padding:36px clamp(20px,5vw,44px); border-top:1px solid var(--line); }
+  .sec-head{ display:flex; align-items:baseline; gap:14px; margin-bottom:10px; }
+  .sec-num{
+    font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--accent-strong);
+    border:1px solid var(--accent); border-radius:3px; padding:2px 7px; letter-spacing:.05em;
+    flex-shrink:0;
+  }
+  h2{
+    font-family:"Oswald", sans-serif; text-transform:uppercase; letter-spacing:.03em;
+    font-weight:600; font-size:clamp(19px,3vw,24px); margin:0; color:var(--ink); text-wrap:balance;
+  }
+  .panel p{ font-size:15px; line-height:1.65; color:var(--ink-soft); max-width:68ch; margin:8px 0 18px; }
+  .panel code{ font-family:"IBM Plex Mono", monospace; font-size:0.92em; color:var(--ink); }
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:18px; margin:4px 0 18px;
+    font-family:"IBM Plex Mono", monospace; font-size:11px; color:var(--ink-soft);
+  }
+  .legend span{ display:inline-flex; align-items:center; gap:7px; }
+  .swatch{ width:22px; height:0; border-top:2.5px solid; display:inline-block; }
+  .swatch.dashed{ border-top-style:dashed; }
+  .swatch.dotted{ border-top-style:dotted; border-top-width:3px; }
+
+  .diagram-frame{
+    background:#ffffff; border:1px solid #0f2a4a33; box-shadow:var(--shadow);
+    overflow-x:auto; padding:20px 8px;
+  }
+  .diagram-frame pre.mermaid{ margin:0; min-width:640px; }
+
+  .callout{
+    margin:18px 0 4px;
+    padding:14px 18px;
+    background:var(--accent-soft);
+    border-left:3px solid var(--accent);
+    font-size:14.5px;
+    line-height:1.55;
+    color:var(--ink);
+    max-width:66ch;
+  }
+  .callout.proven{ background:var(--plum-soft); border-left-color:var(--plum); }
+
+  .badge{
+    display:inline-block;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    padding:2px 8px; border-radius:3px; margin:0 0 12px;
+  }
+  .badge.proven{ background:var(--plum-soft); color:var(--plum); border:1px solid var(--plum); }
+  .badge.proposed{ background:var(--surface-2); color:var(--ink-soft); border:1px dashed var(--line); }
+
+  ol.recipe{
+    margin:6px 0 18px; padding-left:0; list-style:none; counter-reset:step;
+    max-width:68ch;
+  }
+  ol.recipe li{
+    counter-increment:step;
+    position:relative;
+    padding:2px 0 14px 34px;
+    font-size:14.5px; line-height:1.6; color:var(--ink-soft);
+  }
+  ol.recipe li::before{
+    content: counter(step);
+    position:absolute; left:0; top:1px;
+    width:22px; height:22px; border-radius:50%;
+    background:var(--surface); border:1.5px solid var(--ink);
+    color:var(--ink); font-family:"IBM Plex Mono", monospace; font-size:11.5px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+  }
+  ol.recipe li strong{ color:var(--ink); }
+  ol.recipe li code{ font-family:"IBM Plex Mono", monospace; font-size:0.9em; color:var(--ink); background:var(--surface-2); padding:1px 4px; border-radius:2px; }
+
+  table.compare{ width:100%; border-collapse:collapse; font-size:14px; margin-top:6px; }
+  table.compare thead th{
+    text-align:left; padding:8px 12px 8px 0; border-bottom:2px solid var(--ink);
+    font-family:"IBM Plex Mono",monospace; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--ink-soft); font-weight:500;
+  }
+  table.compare tbody td{ padding:10px 12px 10px 0; border-bottom:1px solid var(--line); color:var(--ink-soft); vertical-align:top; }
+  table.compare tbody td:first-child{ color:var(--ink); font-weight:500; white-space:nowrap; }
+  table.compare tbody tr:last-child td{ border-bottom:none; }
+
+  footer{
+    padding:26px clamp(20px,5vw,44px) 30px; border-top:2px solid var(--ink);
+    font-family:"IBM Plex Mono", monospace; font-size:11px; color:var(--ink-soft);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  }
+</style>
+
+<div class="sheet">
+  <div class="drawing">
+
+    <div class="titleblock">
+      <p class="eyebrow">Fluxnova BPM — architecture note</p>
+      <h1>The Agentic Wiring Diagram</h1>
+      <p class="dek">Every connection in this system — modeler to engine, engine to worker, worker to model, worker to tool — is one of exactly three things: an HTTP request/response, a locally spawned process talking over stdin/stdout, or a server-sent event stream. Nothing exotic, nothing engine-specific. That's the whole reason it's feasible to bolt agentic behavior onto Fluxnova without touching the engine: every new capability is a new HTTP call or a new spawned process, on the worker side, in userland.</p>
+      <p class="ref">Companion piece: <a href="https://claude.ai/code/artifact/057ff31e-5acc-4cf3-87a4-c4470a5dcbd2">Who Calls Whom</a> traces one tool-call, request by request, across four architectures. This note zooms out to the whole system and the other legs that doc didn't cover — the Modeler, the human, and the parts that don't exist yet but slot into the same shape.</p>
+    </div>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">00</span><h2>The whole system, one diagram</h2></div>
+      <p>Six components, four already running in this session's actual demos, one (the webhook leg) proposed but drawn to the same rules. Every edge is labeled with what it actually is — no edge in this diagram is a mystery protocol.</p>
+
+      <div class="legend">
+        <span><i class="swatch" style="border-color:#0f2a4a"></i>HTTP request/response</span>
+        <span><i class="swatch dashed" style="border-color:#8a94a3"></i>stdio — spawned process</span>
+        <span><i class="swatch dotted" style="border-color:#2f6690"></i>SSE — server push</span>
+        <span><i class="swatch" style="border-color:#a8611a; border-top-style:dashed;"></i>webhook (proposed)</span>
+      </div>
+
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff', 'primaryTextColor':'#0f2a4a', 'primaryBorderColor':'#0f2a4a', 'lineColor':'#2f6690', 'fontFamily':'IBM Plex Sans, sans-serif', 'fontSize':'13px' }}}%%
+flowchart LR
+    subgraph People["People and tools"]
+        Modeler["Fluxnova Modeler"]
+        Console["Ops Console"]
+    end
+
+    Engine["Fluxnova Engine"]:::engine
+
+    subgraph Workers["Workers"]
+        AgentWorker["agent-task-worker"]
+        PortfolioWorker["portfolio-task-worker"]
+    end
+
+    subgraph Outside["External services"]
+        LLM["Model Provider"]
+        MCP["MCP servers"]
+        HttpAPI["HTTP tools and APIs"]
+    end
+
+    Webhook["Slack, email, other systems"]:::proposed
+
+    Modeler -- HTTP --> Engine
+    Console -- HTTP --> Engine
+    AgentWorker -- HTTP --> Engine
+    PortfolioWorker -- HTTP --> Engine
+
+    Console -. SSE .-> AgentWorker
+    Console -. SSE .-> PortfolioWorker
+
+    AgentWorker -- HTTPS --> LLM
+    AgentWorker -. stdio .-> MCP
+    AgentWorker -- HTTP --> MCP
+    AgentWorker -- HTTP --> HttpAPI
+    PortfolioWorker -- HTTP --> HttpAPI
+
+    Engine -. webhook .-> Webhook
+
+    classDef engine fill:#0f2a4a,stroke:#0f2a4a,stroke-width:2px,color:#ffffff;
+    classDef proposed fill:#ffffff,stroke:#a8611a,stroke-width:1.5px,stroke-dasharray:5 3,color:#a8611a;
+</pre>
+      </div>
+
+      <div class="legend" style="margin-top:14px;">
+        <span><i class="swatch" style="border-color:#0f2a4a"></i>HTTP / HTTPS — request, response</span>
+        <span><i class="swatch dotted" style="border-color:#2f6690"></i>SSE — server pushes, browser just listens</span>
+        <span><i class="swatch dashed" style="border-color:#8a94a3"></i>stdio — spawned process, piped stdin/stdout</span>
+        <span><i class="swatch" style="border-color:#a8611a; border-top-style:dashed;"></i>webhook — proposed, not yet built</span>
+      </div>
+
+      <div class="callout">
+        Notice what's <em>not</em> on this diagram: no arrow starts at the Engine and points outward at anything external. Every outbound call to the model, a tool, or a market-data API originates from a worker — a plain process the engine knows nothing about beyond "something is polling my REST API." That single design choice is what makes the rest of this document possible: the engine's job stays exactly what it's always been (track state, hand out work, wait for answers), and "agentic" is a property of what's polling it, not a property of the engine itself. Two edges run between <code>agent-task-worker</code> and MCP servers on purpose — the same worker reaches a local one over stdio and a remote one over HTTP, covered in leg 04.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">01</span><h2>Modeler → Engine: shipping a diagram</h2></div>
+      <span class="badge proven">proven — every demo this session</span>
+      <p>The leg that doesn't involve any agent at all: getting a <code>.bpmn</code> file from the canvas into a running process. Two calls, both plain HTTP, both things the Modeler (or a `curl` in a terminal, functionally identical) does directly.</p>
+
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff', 'primaryTextColor':'#0f2a4a', 'primaryBorderColor':'#0f2a4a', 'lineColor':'#2f6690', 'actorBkg':'#eef1ec', 'actorBorder':'#0f2a4a', 'actorTextColor':'#0f2a4a', 'signalColor':'#2f6690', 'signalTextColor':'#0f2a4a', 'noteBkgColor':'#f1d9b3', 'noteBorderColor':'#b9711f', 'noteTextColor':'#4a2f08', 'fontFamily':'IBM Plex Sans, sans-serif', 'fontSize':'13px' }}}%%
+sequenceDiagram
+    participant Modeler as Fluxnova Modeler
+    participant Engine as Fluxnova Engine
+
+    Modeler->>Engine: POST /deployment/create<br/>multipart: diagram.bpmn
+    Engine-->>Modeler: 200 — deployment id,<br/>process definition id + version
+
+    Note over Engine: schema validation happens here.<br/>Custom namespaces such as fluxnova and agentic<br/>pass validation even with zero engine-side code -<br/>the schema allows any other namespace by design.
+
+    Modeler->>Engine: POST /process-definition/key/{key}/start
+    Engine-->>Modeler: 200 — process instance id
+
+    Note over Engine: from here the instance is just<br/>state in the engine's own database —<br/>nothing has "started running" in the<br/>sense of a process on a machine.
+</pre>
+      </div>
+
+      <div class="callout">
+        This is the same pair of calls whether the diagram contains zero Agent Tasks or ten — the engine's deploy/start contract has no concept of "agentic" content. It just sees XML and, if the schema's happy, stores it. That's deliberate: it means nothing about adding agent capability requires touching this leg at all.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">02</span><h2>Engine → Worker: the one contract everything else stands on</h2></div>
+      <span class="badge proven">proven — agent-task-worker + portfolio-task-worker</span>
+      <p>Both workers built this session — one that calls an LLM, one that's pure arithmetic — speak the identical protocol to the engine. This is the single generic primitive: the External Task API. Learn this once, and every worker (agentic or not) is just a different thing happening between <code>fetchAndLock</code> and <code>complete</code>.</p>
+
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff', 'primaryTextColor':'#0f2a4a', 'primaryBorderColor':'#0f2a4a', 'lineColor':'#2f6690', 'actorBkg':'#eef1ec', 'actorBorder':'#0f2a4a', 'actorTextColor':'#0f2a4a', 'signalColor':'#2f6690', 'signalTextColor':'#0f2a4a', 'noteBkgColor':'#f1d9b3', 'noteBorderColor':'#b9711f', 'noteTextColor':'#4a2f08', 'fontFamily':'IBM Plex Sans, sans-serif', 'fontSize':'13px' }}}%%
+sequenceDiagram
+    participant Engine as Fluxnova Engine
+    participant Worker as Any Worker
+
+    loop poll every 2 seconds
+        Worker->>Engine: POST fetchAndLock, with a list of topic names
+        Engine-->>Worker: an empty list, or one locked task<br/>with its id, topic, and variables
+    end
+
+    Note over Worker: does whatever the topic means -<br/>an LLM tool-calling loop, a plain<br/>HTTP fetch, pure arithmetic.<br/>The engine has no idea which.
+
+    alt succeeded
+        Worker->>Engine: POST complete, with output variables
+        Engine-->>Worker: 204 OK
+    else failed
+        Worker->>Engine: POST failure, with an error and retry count
+        Engine-->>Worker: 204 OK
+        Note over Engine: retries decrement.<br/>Hitting zero raises an incident in Cockpit.
+    end
+</pre>
+      </div>
+
+      <div class="callout">
+        This is a long-poll-flavored pattern, not a push — the worker asks, the engine answers immediately with whatever's ready (possibly nothing). The engine is 100% passive here: it never initiates contact with a worker, never knows a worker's address, and would function identically if you swapped every worker in this diagram for a different language, a different machine, or a completely different team's code. That's what "zero engine changes" actually cashes out to in practice.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">03</span><h2>Worker → Model: the reasoning leg</h2></div>
+      <span class="badge proven">proven — FX + Time, Morning Portfolio Review</span>
+      <p>Once <code>agent-task-worker</code> has a locked task, it's a plain HTTPS client to whichever model provider you configured — <code>gpt-4.1-mini</code> in every demo this session. This call happens 1–8 times per task execution (the tool-calling loop), each round-trip either ending the loop with a final answer or asking for more tool calls.</p>
+
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff', 'primaryTextColor':'#0f2a4a', 'primaryBorderColor':'#0f2a4a', 'lineColor':'#2f6690', 'actorBkg':'#eef1ec', 'actorBorder':'#0f2a4a', 'actorTextColor':'#0f2a4a', 'signalColor':'#2f6690', 'signalTextColor':'#0f2a4a', 'noteBkgColor':'#f1d9b3', 'noteBorderColor':'#b9711f', 'noteTextColor':'#4a2f08', 'fontFamily':'IBM Plex Sans, sans-serif', 'fontSize':'13px' }}}%%
+sequenceDiagram
+    participant Worker as agent-task-worker
+    participant LLM as Model Provider
+
+    loop iteration 1..maxIterations
+        Worker->>LLM: POST chat completions, with the message<br/>history and the tools discovered from<br/>sibling MCP and HTTP tool children
+        LLM-->>Worker: one or more tool calls, or a final answer
+        opt tool calls returned
+            Note over Worker: dispatch each call - see leg 04 -<br/>append the results, loop again
+        end
+    end
+</pre>
+      </div>
+
+      <div class="callout">
+        The tool schemas sent on every call aren't hand-maintained — they come from whichever tools were discovered as siblings in the ad-hoc sub-process (leg 04/06). Add a new MCP server as a tool child and, with zero code change here, the next task execution's very first call to the model already offers it.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">04</span><h2>Worker → Tool: three transports, one interface</h2></div>
+      <span class="badge proven">proven — real Polygon.io + Finnhub, live data</span>
+      <p><a href="https://claude.ai/code/artifact/057ff31e-5acc-4cf3-87a4-c4470a5dcbd2">Who Calls Whom</a> traces each of these request-by-request; this table is the summary a worker's tool-dispatch code actually branches on. All three live behind the identical <code>invokeTool(tool, args)</code> call — the LLM never knows or cares which one it triggered.</p>
+
+      <table class="compare">
+        <thead><tr><th>Transport</th><th>What happens</th><th>Proven with</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Plain HTTP tool</td>
+            <td>One <code>fetch()</code> to a URL you configured by hand, method/headers/body templated with the LLM's arguments.</td>
+            <td>Agent Tool (HTTP) — FX rate demo</td>
+          </tr>
+          <tr>
+            <td>MCP — stdio (local)</td>
+            <td><code>spawn()</code> a child process, JSON-RPC over its stdin/stdout: <code>initialize</code> → <code>tools/list</code> (schema discovered, not hand-written) → one or more <code>tools/call</code>, then the process is killed.</td>
+            <td><code>mcp-server-time</code>, Polygon.io (<code>uvx</code>), Finnhub (<code>npx</code>)</td>
+          </tr>
+          <tr>
+            <td>MCP — HTTP (remote)</td>
+            <td>Same three JSON-RPC methods, but each one is a POST to a URL instead of a pipe — the server can live on a completely different machine.</td>
+            <td>Built and tested (<code>fx-rate-mcp-http-server.js</code>); not used in the live Portfolio demo</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout proven">
+        The two real bugs this session hit here are worth keeping in mind for the next one: Polygon's published release pinned an incompatible SDK version (fixed with a <code>uv</code> dependency override), and the worker wasn't actually loading its own <code>.env</code> file, so newly-added API keys silently never reached spawned subprocesses until <code>--env-file</code> was added explicitly. Neither bug was in the architecture — both were the kind of thing that only surfaces by actually running real external services, not by reasoning about the design.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">05</span><h2>Engine → Human: making a poll-based system feel instant</h2></div>
+      <span class="badge proven">proven — Morning Portfolio Review chat loop</span>
+      <p>Nothing about BPMN or the External Task API is naturally fast — everything so far in this document is request/response or poll/wait. Getting a human-in-the-loop chat to feel like a live conversation rather than a form you submit into a queue takes three separate tricks stacked on top of the same primitives, not a different protocol.</p>
+
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff', 'primaryTextColor':'#0f2a4a', 'primaryBorderColor':'#0f2a4a', 'lineColor':'#2f6690', 'actorBkg':'#eef1ec', 'actorBorder':'#0f2a4a', 'actorTextColor':'#0f2a4a', 'signalColor':'#2f6690', 'signalTextColor':'#0f2a4a', 'noteBkgColor':'#f1d9b3', 'noteBorderColor':'#b9711f', 'noteTextColor':'#4a2f08', 'fontFamily':'IBM Plex Sans, sans-serif', 'fontSize':'13px' }}}%%
+sequenceDiagram
+    participant Human as Analyst in browser
+    participant Console as Console UI server
+    participant Engine as Fluxnova Engine
+    participant Worker as agent-task-worker
+
+    Note over Console,Worker: trick 1 - SSE, not polling, for anything<br/>that is genuinely a live stream
+
+    Worker--)Console: tails worker.log, pushes each new line
+    Console--)Human: EventSource - log appears the instant it is written
+
+    Note over Human,Engine: trick 2 - fast polling for state that<br/>changes in discrete jumps, not a stream
+
+    loop every 1.5 to 2 seconds
+        Human->>Console: is my chat task ready yet
+        Console->>Engine: GET pending ChatWithAgent tasks
+        Engine-->>Console: none yet, or one task
+        Console-->>Human: render, or wait
+    end
+
+    Note over Human,Worker: trick 3 - be honest about the real<br/>bottleneck: this leg takes 5 to 25 real<br/>seconds, and no UI polish changes that
+
+    Human->>Console: types a follow-up, clicks Send
+    Console->>Engine: POST complete, action is send,<br/>with the analyst message
+    Engine-->>Console: 204 OK
+    Note over Engine,Worker: gateway routes to a fresh<br/>AgentChatTask - engine parks it,<br/>in process, no network
+    Worker->>Engine: fetchAndLock picks it up
+    Note over Worker: full tool-calling loop again -<br/>this is where the real time goes
+    Worker->>Engine: complete, with a new agent reply
+    Engine-->>Console: next poll finds the new task
+    Console-->>Human: reply appears as a new bubble
+</pre>
+      </div>
+
+      <div class="callout">
+        Call this "tachyon-like" with one honest asterisk: the <em>feedback</em> is close to instant — every log line streams the moment it's written, the UI never leaves you staring at a spinner with no information — but the <em>answer</em> still takes as long as a tool-calling LLM loop actually takes, typically 5–25 seconds in this session's real runs. What's fast is the illusion of continuous progress; what's honestly bounded by physics (network round-trips to a model provider, subprocess spin-up for MCP servers) is the actual reasoning. This session also hit a concrete engine-side limit worth knowing about here: a chat that runs long enough can grow its memory past a database column's length limit and fail — fixed by capping and trimming what gets persisted, but a good reminder that "fast and unbounded" isn't free even with SSE doing the UI work.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">06</span><h2>Recipe: building an agent directly in Fluxnova</h2></div>
+      <span class="badge proven">proven — every Agent Task in this session</span>
+      <p>No engine code, no new deployment artifact beyond the BPMN itself. The whole trick is one existing BPMN primitive, used in a way its designers probably didn't picture but never prohibited either.</p>
+
+      <ol class="recipe">
+        <li><strong>Wrap the agent in an ad-hoc sub-process.</strong> Ad-hoc sub-processes support an <code>activeTasksCollection</code> — an expression naming exactly which child activities the engine is allowed to schedule. Everything else inside the container exists in the diagram but is never entered.</li>
+        <li><strong>Add one orchestrator task</strong> — a <code>bpmn:serviceTask</code>, <code>camunda:type="external"</code>, topic <code>agent-task</code> — and list <em>only</em> its id in <code>activeTasksCollection</code>. This is the one task the engine actually runs.</li>
+        <li><strong>Add tool children as siblings</strong> — more <code>bpmn:serviceTask</code>s, same container, <em>not</em> listed in <code>activeTasksCollection</code>. The engine parses them, validates them, draws them — and never schedules them. They're pure configuration, read by the worker, not the engine.</li>
+        <li><strong>Point the worker at the topic.</strong> <code>agent-task-worker</code> locks the orchestrator task, reads the deployed process XML itself (one HTTP GET), finds every sibling tool inside the same ad-hoc container, and turns each into a callable function schema for the model.</li>
+        <li><strong>Run the loop inside one task execution.</strong> Model call → tool dispatch → model call, as many times as <code>Max Iterations</code> allows, entirely inside the worker's handling of that single locked task. The engine only ever sees one <code>fetchAndLock</code> and one <code>complete</code> — the whole reasoning loop is invisible to it.</li>
+      </ol>
+
+      <div class="callout">
+        This is why it's "feasible to add agentic capabilities to Fluxnova" as a general claim, not just a description of what already exists: nothing above is Fluxnova-specific engine behavior beyond the pre-existing <code>activeTasksCollection</code> mechanism. Any process, in any diagram, gets an agent by following this same five-step recipe — it composes with whatever else is already in the process.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">07</span><h2>Recipe: invoking an external MCP or Agent</h2></div>
+      <span class="badge proven">proven — Polygon.io, Finnhub, mcp-server-time</span>
+      <p>The load-bearing insight here: <strong>MCP has no concept of "tool" versus "agent."</strong> A <code>tools/call</code> can be answered by three lines of arithmetic or by an entire autonomous multi-step agent running behind that one endpoint — the protocol, and everything <code>agent-task-worker</code> does with it, is identical either way. Connecting Fluxnova to someone else's agent is the same recipe as connecting it to a weather API.</p>
+
+      <ol class="recipe">
+        <li><strong>Add an Agent Tool (MCP) child</strong> to the same ad-hoc container as the orchestrator — same rules as leg 06, excluded from <code>activeTasksCollection</code>.</li>
+        <li><strong>Choose a transport.</strong> <code>Transport: Local (stdio)</code> with a <code>Command</code>/<code>Command Arguments</code> the worker will spawn (<code>uvx</code>, <code>npx</code>, a plain script) — or <code>Transport: Remote (HTTP)</code> with a <code>Server URL</code> if the agent/tool already runs as a service.</li>
+        <li><strong>The worker connects once per task execution</strong> — spawns or POSTs <code>initialize</code>, then <code>tools/list</code>. Whatever that external agent chooses to expose becomes real, callable functions; nothing is hand-typed on the Fluxnova side.</li>
+        <li><strong>Every discovered tool is namespaced</strong> <code>serverName__toolName</code> so one Agent Task can safely mix several external agents/tool providers at once — this session's Portfolio demo ran Polygon and Finnhub side by side this way, 41 tools offered to one model call.</li>
+        <li><strong>The model decides what to call, if anything</strong> — a question that only needs one provider's data never touches the other. Nothing forces every connected agent to be consulted every time.</li>
+      </ol>
+
+      <div class="callout">
+        A tool provider that doesn't speak MCP at all still fits — that's leg 04's plain HTTP path, and it's the same shape one level down: point at a URL, template the arguments in, read the response back as text. MCP buys schema discovery and multi-tool-per-connection; hand-written HTTP buys "works with literally any endpoint that returns text," including an external agent's own webhook-style API if that's all it offers.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">08</span><h2>Extending outward: webhooks in and out</h2></div>
+      <span class="badge proposed">proposed — not built this session</span>
+      <p>Nothing in this session wired up a webhook, in either direction — worth being direct about that rather than implying it's proven. But the shape is a direct extension of legs already built, not a new mechanism.</p>
+
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#ffffff', 'primaryTextColor':'#0f2a4a', 'primaryBorderColor':'#0f2a4a', 'lineColor':'#2f6690', 'actorBkg':'#eef1ec', 'actorBorder':'#0f2a4a', 'actorTextColor':'#0f2a4a', 'signalColor':'#a8611a', 'signalTextColor':'#0f2a4a', 'noteBkgColor':'#f1d9b3', 'noteBorderColor':'#b9711f', 'noteTextColor':'#4a2f08', 'fontFamily':'IBM Plex Sans, sans-serif', 'fontSize':'13px' }}}%%
+sequenceDiagram
+    participant Ext as External system
+    participant Recv as webhook receiver<br/>(proposed — a small HTTP endpoint)
+    participant Engine as Fluxnova Engine
+    participant Worker as portfolio-task-worker
+
+    rect rgb(255, 248, 235)
+    Note over Ext,Engine: inbound — an event starts a process,<br/>instead of a human clicking a button
+    Ext->>Recv: POST /webhook/market-event
+    Recv->>Engine: POST /process-definition/key/{key}/start<br/>(or /message for a correlated start)
+    Engine-->>Recv: 200 — instance started
+    end
+
+    rect rgb(255, 248, 235)
+    Note over Worker,Ext: outbound — Publish Briefing posts<br/>somewhere real instead of just<br/>writing a process variable
+    Worker->>Ext: POST to a Slack webhook URL,<br/>with the final briefing text as the payload
+    Ext-->>Worker: 200
+    end
+</pre>
+      </div>
+
+      <div class="callout">
+        Both legs are exactly leg 04's plain-HTTP-tool pattern, just pointed a different direction. Outbound needs nothing new at all — <code>Publish Briefing</code> already runs as a deterministic external task; today it writes <code>publishedAt</code> to a variable, and swapping that one <code>fetch()</code> call for a POST to a real webhook URL is the entire change. Inbound needs one new small always-on HTTP listener (not a worker — it doesn't poll anything, it reacts to an external POST), which then makes the exact same <code>start</code> call the Modeler already makes in leg 01. Neither direction touches the engine.
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="sec-head"><span class="sec-num">09</span><h2>Why it holds together</h2></div>
+      <table class="compare">
+        <thead><tr><th>Leg</th><th>Transport</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Modeler → Engine</td><td>HTTP</td><td>proven, every demo</td></tr>
+          <tr><td>Engine ↔ Worker</td><td>HTTP (poll)</td><td>proven, two independent workers</td></tr>
+          <tr><td>Worker → Model</td><td>HTTPS</td><td>proven, live OpenAI calls</td></tr>
+          <tr><td>Worker → Tool (HTTP)</td><td>HTTP</td><td>proven, FX demo</td></tr>
+          <tr><td>Worker → MCP (stdio)</td><td>local process, stdin/stdout</td><td>proven, real Polygon/Finnhub/time data</td></tr>
+          <tr><td>Worker → MCP (remote)</td><td>HTTP</td><td>built and tested standalone</td></tr>
+          <tr><td>Console → Worker log</td><td>SSE</td><td>proven, both consoles</td></tr>
+          <tr><td>Human ↔ Engine (chat loop)</td><td>HTTP (poll) + user tasks</td><td>proven, Portfolio Review</td></tr>
+          <tr><td>Webhook, either direction</td><td>HTTP</td><td>proposed — same primitive, not yet wired</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:18px;">One row is genuinely new mechanism (SSE, for the console's live feel); everything else on this list is the same request/response or spawn/pipe pattern pointed at a different address. That's the actual feasibility argument for adding more agentic capability to Fluxnova going forward: there is no ninth transport waiting to be invented. The next external system Fluxnova needs to talk to — another market data provider, an internal tool, a different LLM host, a real Slack workspace — is a new row in this table that reuses a transport already proven above.</p>
+    </section>
+
+    <footer>
+      <span>Fluxnova BPM · Agentic Architecture</span>
+      <span>9 legs traced · 3 transports total</span>
+    </footer>
+  </div>
+</div>
