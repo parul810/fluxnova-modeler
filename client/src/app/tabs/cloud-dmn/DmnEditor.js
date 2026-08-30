@@ -144,15 +144,9 @@ export class DmnEditor extends CachedComponent {
         propertiesPanel.attachTo(this.propertiesPanelRef.current);
       }
 
-      // attach overview
-      if (this.overviewRef.current) {
-        modeler.attachOverviewTo(this.overviewRef.current);
-
-        if (isOverviewOpen(this.props)) {
-          modeler._emit('overviewOpen');
-        }
-      }
     }
+
+    this._updateOverview();
 
     this.checkImport();
   }
@@ -174,13 +168,7 @@ export class DmnEditor extends CachedComponent {
       this.attachPropertiesPanel();
     }
 
-    // We can only notify interested parties about overview open once its parent component was
-    // rendered
-    if (isOverviewOpened(this.props, prevProps)) {
-      const modeler = this.getModeler();
-
-      modeler._emit('overviewOpen');
-    }
+    this._updateOverview();
 
     if (isCachedStateChange(prevProps, this.props)) {
       this.handleChanged();
@@ -200,6 +188,12 @@ export class DmnEditor extends CachedComponent {
     if (propertiesPanel && this.propertiesPanelRef.current) {
       propertiesPanel.attachTo(this.propertiesPanelRef.current);
     }
+  }
+
+  _updateOverview() {
+    const modeler = this.getModeler();
+
+    modeler.updateOverview(this.overviewRef.current, isOverviewOpen(this.props));
   }
 
   ifMounted = (fn) => {
@@ -339,16 +333,7 @@ export class DmnEditor extends CachedComponent {
       }
     }
 
-    // attach or detach overview
-    if (activeView.type === 'drd') {
-      modeler.detachOverview();
-    } else if (previousActiveView && previousActiveView.type === 'drd') {
-      modeler.attachOverviewTo(this.overviewRef.current);
-
-      if (isOverviewOpen(this.props)) {
-        modeler._emit('overviewOpen');
-      }
-    }
+    // attach or detach overview — handled by componentDidUpdate via _updateOverview()
 
     // must be called last
     this.setCached({

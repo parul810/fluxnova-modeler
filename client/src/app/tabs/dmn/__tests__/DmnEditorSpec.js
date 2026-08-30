@@ -1233,7 +1233,7 @@ describe('<DmnEditor>', function() {
 
       sinon.stub(modeler, 'getActiveView').callsFake(() => decisionTableView);
 
-      const overviewAttachSpy = sinon.spy(modeler, 'attachOverviewTo');
+      const overviewUpdateSpy = sinon.spy(modeler, 'updateOverview');
 
       // when
       instance.viewsChanged({
@@ -1242,7 +1242,9 @@ describe('<DmnEditor>', function() {
       });
 
       // then
-      expect(overviewAttachSpy).to.have.been.called;
+      await waitFor(() => {
+        expect(overviewUpdateSpy).to.have.been.called;
+      });
     });
 
 
@@ -1258,7 +1260,7 @@ describe('<DmnEditor>', function() {
 
       sinon.stub(modeler, 'getActiveView').callsFake(() => drdView);
 
-      const overviewDetachSpy = sinon.spy(modeler, 'detachOverview');
+      const overviewUpdateSpy = sinon.spy(modeler, 'updateOverview');
 
       // when
       instance.viewsChanged({
@@ -1267,7 +1269,9 @@ describe('<DmnEditor>', function() {
       });
 
       // then
-      expect(overviewDetachSpy).to.have.been.called;
+      await waitFor(() => {
+        expect(overviewUpdateSpy).to.have.been.called;
+      });
     });
 
   });

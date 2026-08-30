@@ -6,6 +6,12 @@ All notable changes to the [Fluxnova Modeler](https://github.com/finos/fluxnova-
 
 **\_Note:** Yet to be released changes appear here.\_
 
+
+## 1.3.2
+
+- Fixed form properties and form components missing on form import/create (#119)
+- Fixed DMN import and decision modification crashing (#120)
+
 ## 1.3.1
 
 - Fixed deep links to use correct Fluxnova Monitoring URL path (#108)
