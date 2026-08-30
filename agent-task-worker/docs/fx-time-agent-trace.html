@@ -1,0 +1,306 @@
+<title>FX + Time Agent Trace</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161922;
+    --panel-2: #1a1e29;
+    --border: #262b38;
+    --text: #d7dae2;
+    --muted: #7c8394;
+    --engine: #5b8def;
+    --agent: #e0a83f;
+    --mcp: #b072e8;
+    --llm: #3fb968;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    padding: 28px 32px 60px;
+  }
+
+  header {
+    max-width: 1040px;
+    margin: 0 auto 28px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 650;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 13.5px;
+    margin: 0 0 18px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .meta-chip {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+  }
+
+  .meta-chip b { color: var(--text); font-weight: 600; }
+
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px 24px;
+  }
+
+  section h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 14px;
+    font-weight: 650;
+  }
+
+  .diagram-scroll {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .diagram-scroll pre.mermaid {
+    min-width: 760px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot.engine { background: var(--engine); }
+  .dot.mcp { background: var(--mcp); }
+  .dot.llm { background: var(--llm); }
+
+  .waterfall { display: flex; flex-direction: column; gap: 10px; }
+
+  .wf-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 74px;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .wf-label {
+    font-size: 12.5px;
+    color: var(--text);
+  }
+
+  .wf-label small { display: block; color: var(--muted); font-size: 10.5px; margin-top: 1px; }
+
+  .wf-track {
+    position: relative;
+    height: 20px;
+    background: var(--panel-2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .wf-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 4px;
+  }
+
+  .wf-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .wf-total {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .wf-total b { color: var(--text); }
+
+  footer {
+    max-width: 1040px;
+    margin: 30px auto 0;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+</style>
+
+<header>
+  <h1>FX + Time Agent — Call Trace</h1>
+  <p class="subtitle">Reconstructed from one real run's worker.log — every hop, in the order it actually happened.</p>
+  <div class="meta-row">
+    <span class="meta-chip">task <b>69ee8002…</b></span>
+    <span class="meta-chip">activity <b>OrchestratorTask</b></span>
+    <span class="meta-chip">model <b>gpt-4.1-mini</b></span>
+    <span class="meta-chip">tools offered <b>3</b></span>
+    <span class="meta-chip">total <b>4.53s</b></span>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>Sequence</h2>
+    <div class="diagram-scroll">
+<pre class="mermaid">
+%%{init: {'theme':'base', 'themeVariables': {
+  'background':'#161922',
+  'primaryColor':'#1c2030',
+  'primaryTextColor':'#d7dae2',
+  'primaryBorderColor':'#33394a',
+  'lineColor':'#4a5268',
+  'actorBkg':'#1c2030',
+  'actorBorder':'#33394a',
+  'actorTextColor':'#d7dae2',
+  'actorLineColor':'#33394a',
+  'signalColor':'#8b93a6',
+  'signalTextColor':'#d7dae2',
+  'labelBoxBkgColor':'#1c2030',
+  'labelBoxBorderColor':'#33394a',
+  'labelTextColor':'#d7dae2',
+  'loopTextColor':'#d7dae2',
+  'noteBkgColor':'#20263a',
+  'noteTextColor':'#9aa2b8',
+  'noteBorderColor':'#33394a',
+  'activationBkgColor':'#20263a',
+  'activationBorderColor':'#4a5268',
+  'sequenceNumberColor':'#0f1115',
+  'fontFamily':'ui-monospace, SF Mono, Menlo, monospace',
+  'fontSize':'12.5px'
+}}}%%
+sequenceDiagram
+    autonumber
+    participant Engine as Camunda Engine
+    participant Worker as agent-task-worker
+    participant FxMCP as FX MCP (stdio)
+    participant TimeMCP as Time MCP (stdio)
+    participant LLM as LLM
+
+    Engine->>Worker: fetchAndLock -> locked OrchestratorTask
+    Note right of Worker: process definition XML: cache hit, no call
+
+    Worker->>FxMCP: spawn node fx-rate-mcp-server.js
+    activate FxMCP
+    Worker->>FxMCP: initialize
+    FxMCP-->>Worker: initialize result
+    Worker->>FxMCP: notifications/initialized
+    Worker->>FxMCP: tools/list
+    FxMCP-->>Worker: [get_rate]
+    Note over Worker,FxMCP: handshake 68ms
+
+    Worker->>TimeMCP: spawn uvx mcp-server-time
+    activate TimeMCP
+    Worker->>TimeMCP: initialize
+    TimeMCP-->>Worker: initialize result
+    Worker->>TimeMCP: notifications/initialized
+    Worker->>TimeMCP: tools/list
+    TimeMCP-->>Worker: [get_current_time, convert_time]
+    Note over Worker,TimeMCP: handshake 426ms (uvx spin-up)
+
+    Worker->>LLM: POST /chat/completions - iteration 1, 3 tools offered
+    LLM-->>Worker: tool_calls: get_current_time, get_rate
+    Note over Worker,LLM: 2.44s
+
+    Worker->>TimeMCP: tools/call get_current_time(Asia/Tokyo)
+    TimeMCP-->>Worker: 17:56 Friday, Asia/Tokyo
+    Worker->>FxMCP: tools/call get_rate(USD, EUR)
+    FxMCP-->>Worker: 1 USD = 0.9186 EUR
+    Note over Worker,FxMCP: both tool calls 10ms total
+
+    Worker->>LLM: POST /chat/completions - iteration 2
+    LLM-->>Worker: finish_reason stop, final answer
+    Note over Worker,LLM: 1.57s
+
+    Worker->>Engine: POST complete (agentResponse)
+    Engine-->>Worker: 204
+
+    Worker->>FxMCP: terminate subprocess
+    deactivate FxMCP
+    Worker->>TimeMCP: terminate subprocess
+    deactivate TimeMCP
+</pre>
+    </div>
+    <div class="legend">
+      <span><span class="dot engine"></span>Engine REST — real HTTP, localhost:8080</span>
+      <span><span class="dot mcp"></span>MCP calls — local, over spawned subprocess stdin/stdout (no network)</span>
+      <span><span class="dot llm"></span>LLM calls — real HTTPS, OpenAI</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where the 4.53s went</h2>
+    <div class="waterfall" id="waterfall"></div>
+    <div class="wf-total"><span>total wall time</span><b>4534ms</b></div>
+  </section>
+</main>
+
+<footer>source: agent-task-worker/worker.log — timestamps are elapsed seconds since the worker process started</footer>
+
+<script>
+  const phases = [
+    { label: 'FX MCP handshake',   sub: 'spawn + initialize + tools/list', ms: 68,   color: '#b072e8' },
+    { label: 'Time MCP handshake', sub: 'uvx spin-up dominates',          ms: 426,  color: '#b072e8' },
+    { label: 'LLM call 1',         sub: 'tool selection',                 ms: 2440, color: '#3fb968' },
+    { label: 'Tool dispatch',      sub: 'both MCP tools/call',            ms: 10,   color: '#b072e8' },
+    { label: 'LLM call 2',         sub: 'final answer',                   ms: 1570, color: '#3fb968' },
+    { label: 'complete + teardown',sub: 'engine ack + subprocess kill',   ms: 16,   color: '#5b8def' }
+  ];
+  const max = Math.max(...phases.map(p => p.ms));
+  const wf = document.getElementById('waterfall');
+  phases.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'wf-row';
+    row.innerHTML =
+      '<div class="wf-label">' + p.label + '<small>' + p.sub + '</small></div>' +
+      '<div class="wf-track"><div class="wf-fill" style="width:' + (p.ms / max * 100) + '%;background:' + p.color + '"></div></div>' +
+      '<div class="wf-value">' + p.ms + 'ms</div>';
+    wf.appendChild(row);
+  });
+</script>
