@@ -1,0 +1,18 @@
+WorkX brings AI agents into governed enterprise processes. Agents provide intelligence; WorkX provides the process, state, controls and accountability.
+
+| Layer                        | Agent SDK                   | WorkX                            |
+| ---------------------------- | --------------------------- | -------------------------------- |
+| Reasoning                    | **Strong**                  | Not the point                    |
+| Tool selection               | **Strong**                  | Govern/coordinate                |
+| Agent loop                   | **Strong**                  | Coordinate where necessary       |
+| Agent memory/context         | SDK capability              | Process/business state           |
+| Business process             | Limited                     | **Core strength**                |
+| Long-running state           | Not the primary abstraction | **Core strength**                |
+| Human approval               | Agent-level capability      | **Enterprise workflow**          |
+| SLA/timers/escalation        | Not the primary abstraction | **Core strength**                |
+| Audit trail                  | Agent trace                 | **Business-process audit trail** |
+| Cross-system orchestration   | Tools                       | **Process orchestration**        |
+| Existing BPMN                | No                          | **Yes**                          |
+| Deterministic + agentic flow | Possible                    | **Core proposition**             |
+| Enterprise governance        | SDK-level                   | **Process-level governance**     |
+
