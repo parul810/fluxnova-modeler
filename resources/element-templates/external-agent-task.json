@@ -1,0 +1,95 @@
+[
+  {
+    "$schema": "https://unpkg.com/@camunda/element-templates-json-schema/resources/schema.json",
+    "name": "External Agent Task",
+    "id": "org.fluxnova.ExternalAgentTask",
+    "description": "Runs an external AI agent and waits for it to finish, however long that takes. The agent reports progress by webhook; this task completes only when the agent reports a final result. The result lands in the process variables agentBusinessOutcome (approved, rejected, guardrail_blocked or empty) and agentResponse, so a gateway after this task can route on them.",
+    "appliesTo": [
+      "bpmn:ServiceTask"
+    ],
+    "properties": [
+      {
+        "label": "Implementation",
+        "type": "Hidden",
+        "value": "external",
+        "binding": {
+          "type": "property",
+          "name": "camunda:type"
+        }
+      },
+      {
+        "label": "Topic",
+        "type": "Hidden",
+        "value": "fluxnova-agent",
+        "binding": {
+          "type": "property",
+          "name": "camunda:topic"
+        }
+      },
+      {
+        "label": "Agent URL",
+        "description": "Base URL of the agent server, e.g. http://localhost:8000. Must be a host the engine is allowed to call.",
+        "type": "String",
+        "value": "http://localhost:8000",
+        "binding": {
+          "type": "camunda:property",
+          "name": "agent.baseUrl"
+        },
+        "constraints": {
+          "notEmpty": true
+        }
+      },
+      {
+        "label": "Agent Name",
+        "description": "The application name the agent server knows this agent by.",
+        "type": "String",
+        "value": "human_in_the_loop",
+        "binding": {
+          "type": "camunda:property",
+          "name": "agent.appName"
+        },
+        "constraints": {
+          "notEmpty": true
+        }
+      },
+      {
+        "label": "Run As User",
+        "description": "User id the agent session runs under. Leave empty to use the engine's default.",
+        "type": "String",
+        "optional": true,
+        "binding": {
+          "type": "camunda:property",
+          "name": "agent.userId"
+        }
+      },
+      {
+        "label": "Agent Protocol",
+        "description": "How the engine talks to the agent server.",
+        "type": "Dropdown",
+        "value": "adk",
+        "choices": [
+          {
+            "name": "ADK",
+            "value": "adk"
+          }
+        ],
+        "binding": {
+          "type": "camunda:property",
+          "name": "agent.protocol"
+        }
+      },
+      {
+        "label": "Instruction",
+        "description": "What you want the agent to do, in plain language, e.g. Create an expense report for this customer. Use an expression such as ${customerName} to include process data.",
+        "type": "Text",
+        "binding": {
+          "type": "camunda:inputParameter",
+          "name": "agentInputText"
+        },
+        "constraints": {
+          "notEmpty": true
+        }
+      }
+    ]
+  }
+]
